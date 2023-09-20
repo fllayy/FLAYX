@@ -81,12 +81,14 @@ class DBClass():
         CREATE TABLE IF NOT EXISTS settings (
                 id BIGINT PRIMARY KEY,
                 prefix VARCHAR(5),
-                volume TINYINT(100)
+                volume TINYINT
         )
         """
 
         cursor = self.db_connection.cursor()
         cursor.execute(create_server_table_query)
+        cursor.close()
+        self.db_connection.commit()
 
         print('Created tables Successfully!')
 
@@ -119,12 +121,15 @@ class DBClass():
         select_query = f"UPDATE {table_name} SET {row} = %s WHERE id = %s"
         cursor.execute(select_query, (data, id))
         cursor.close()
+        self.db_connection.commit()
                   
 
 
 try:
     db = DBClass()
     db.create_tables()
-    
+    db.update_one("settings", "volume", 16, "1121869645364854804")
+    a = db.find_one("settings", "1121869645364854804", "volume")
+    print(a)
 except Exception as e:
     raise Exception("Not able to connect MYSQL! Reason:", e)
