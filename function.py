@@ -33,9 +33,6 @@ MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
 
 #--------------- Database ---------------
-if not (MYSQL_HOST and MYSQL_USER and MYSQL_PASSWORD and MYSQL_DATABASE):
-	raise Exception("MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD and MYSQL_DATABASE can't not be empty in .env")
-
 class DBClass():
 
     def __init__(self):
@@ -53,7 +50,7 @@ class DBClass():
             print(f"Error connecting to MySQL: {e}")
 
 
-    async def check(self):
+    def check(self):
         try:
             self.db_connection.ping(reconnect=True, attempts=3, delay=5)
         except mysql.connector.Error as e:
@@ -61,6 +58,7 @@ class DBClass():
 
 
     def ping_mysql(self):
+        self.check()
         try:
             start_time = time.time()
             conn = mysql.connector.connect(
@@ -78,6 +76,7 @@ class DBClass():
 
 
     def create_tables(self):
+        self.check()
         create_server_table_query = """
         CREATE TABLE IF NOT EXISTS settings (
                 id BIGINT PRIMARY KEY,
@@ -93,6 +92,7 @@ class DBClass():
 
 
     def find_one(self, table_name, id, row):
+        self.check()
         cursor = self.db_connection.cursor()
         select_query = f"SELECT {row} FROM {table_name} WHERE id = %s"
         cursor.execute(select_query, (id, ))
@@ -105,6 +105,7 @@ class DBClass():
         
 
     def set_settings(self, id):
+        self.check()
         cursor = self.db_connection.cursor()
         insert_query = "INSERT INTO settings (id, prefix,  volume) VALUES (%s, %s, %s)"
         cursor.execute(insert_query, (id, '+', 100))
@@ -113,6 +114,7 @@ class DBClass():
 
 
     def update_one(self, table_name, row, data, id):
+        self.check()
         cursor = self.db_connection.cursor()
         select_query = f"UPDATE {table_name} SET {row} = %s WHERE id = %s"
         cursor.execute(select_query, (data, id))
