@@ -128,8 +128,5 @@ class DBClass():
 try:
     db = DBClass()
     db.create_tables()
-    db.update_one("settings", "volume", 16, "1121869645364854804")
-    a = db.find_one("settings", "1121869645364854804", "volume")
-    print(a)
 except Exception as e:
     raise Exception("Not able to connect MYSQL! Reason:", e)
