@@ -130,7 +130,7 @@ python main.py
 
 ## 🗺 Roadmap
 
-> - [ ] `ℹ️  Create settings on every admin settings`
+> - [ ] `ℹ️  Bot time server`
 > - [ ] `ℹ️  Settings view command`
 > - [ ] `ℹ️  Bot leave when alone`
 
