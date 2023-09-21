@@ -132,7 +132,7 @@ class MusicControlsView(View):
             await interaction.response.send_message("You don't have permission to do this.")
 
 
-    @discord.ui.button(label="Shuffle", emoji="💡", style=discord.ButtonStyle.grey, custom_id="shuffle_button")
+    @discord.ui.button(label="Shuffle", emoji="🔀", style=discord.ButtonStyle.grey, custom_id="shuffle_button")
     async def shuffle_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         player = self.player
 

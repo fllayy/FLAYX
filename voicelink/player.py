@@ -44,6 +44,7 @@ class Player(pomice.Player):
             track: pomice.Track = self.queue.get()
         except pomice.QueueEmpty:
             if self.autoplay:
+                print(self.history)
                 new = await self.get_recommendations(track=self.track)
                 for track in new.tracks:
                     if track != self.track and track not in self.history:
@@ -51,7 +52,7 @@ class Player(pomice.Player):
                         break
                 self.track = newtrack
                 if len(self.history) >= 5:
-                    self.history.pop()
+                    self.history.pop(0)
                 self.history.append(self.track)
             else:
                 return await self.teardown()
@@ -93,9 +94,11 @@ class Player(pomice.Player):
     async def teardown(self):
         """Clear internal states, remove player controller and disconnect."""
         with suppress((discord.HTTPException), (KeyError)):
-            await self.destroy()
             if self.controller:
                 await self.controller.delete()
+            await self.destroy()
+            
+
 
     async def set_context(self, ctx: commands.Context):
         """Set context for the player"""

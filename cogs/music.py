@@ -128,7 +128,7 @@ class Music(commands.Cog):
 
         player.track = player.current
         if len(player.history) >= 5:
-            player.history.pop()
+            player.history.pop(0)
         player.history.append(player.track)
 
     
@@ -352,27 +352,31 @@ class Music(commands.Cog):
                 player: Player = ctx.voice_client
                 await player.set_context(ctx=ctx)
 
-        results = await player.get_tracks(search, ctx=ctx)
+        if self.is_privileged(ctx):
+            results = await player.get_tracks(search, ctx=ctx)
 
-        if not results:
-            return await ctx.reply("No results were found for that search term", delete_after=7)
+            if not results:
+                return await ctx.reply("No results were found for that search term", delete_after=7)
 
-        if isinstance(results, pomice.Playlist):
-            for track in results.tracks:
+            if isinstance(results, pomice.Playlist):
+                for track in results.tracks:
+                    player.queue.put_at_front(track)
+            else:
+                track = results[0]
                 player.queue.put_at_front(track)
+
+            await ctx.reply(f"Added **{track.title}** [`{function.convertMs(track.length)}`] is add to top of the queue.")
+
+            if not player.is_playing:
+                await player.do_next()
+
+            player.track = player.current
+            if len(player.history) >= 5:
+                player.history.pop(0)
+            player.history.append(player.track)
         else:
-            track = results[0]
-            player.queue.put_at_front(track)
+            return await ctx.reply("You must be an admin or dj")
 
-        await ctx.reply(f"Added **{track.title}** [`{function.convertMs(track.length)}`] is add to top of the queue.")
-
-        if not player.is_playing:
-            await player.do_next()
-
-        player.track = player.current
-        if len(player.history) >= 5:
-            player.history.pop()
-        player.history.append(player.track)
 
 
     @commands.hybrid_command(name='playnow', with_app_command=True, description="Play the song RIGHT NOW")
@@ -391,29 +395,34 @@ class Music(commands.Cog):
                 await player.set_volume(volume=volume)
                 await player.set_context(ctx=ctx)
 
-        results = await player.get_tracks(search, ctx=ctx)
+        if self.is_privileged(ctx):
 
-        if not results:
-            return await ctx.reply("No results were found for that search term", delete_after=7)
+            results = await player.get_tracks(search, ctx=ctx)
 
-        if isinstance(results, pomice.Playlist):
-            for track in results.tracks:
+            if not results:
+                return await ctx.reply("No results were found for that search term", delete_after=7)
+
+            if isinstance(results, pomice.Playlist):
+                for track in results.tracks:
+                    player.queue.put_at_front(track)
+                await player.stop()
+            else:
+                track = results[0]
                 player.queue.put_at_front(track)
-            await player.stop()
+                await player.stop()
+
+            await ctx.reply(f"Play **{track.title}** [`{function.convertMs(track.length)}`] now.")
+
+            if not player.is_playing:
+                await player.do_next()
+
+            player.track = player.current
+            if len(player.history) >= 5:
+                player.history.pop(0)
+            player.history.append(player.track)
+        
         else:
-            track = results[0]
-            player.queue.put_at_front(track)
-            await player.stop()
-
-        await ctx.reply(f"Play **{track.title}** [`{function.convertMs(track.length)}`] now.")
-
-        if not player.is_playing:
-            await player.do_next()
-
-        player.track = player.current
-        if len(player.history) >= 5:
-            player.history.pop()
-        player.history.append(player.track)
+            return await ctx.reply("You must be an admin or dj")
 
 
 

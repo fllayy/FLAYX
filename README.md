@@ -130,8 +130,9 @@ python main.py
 
 ## 🗺 Roadmap
 
-> - [ ] `ℹ️  More options`
-> - [ ] `ℹ️ ...`
+> - [ ] `ℹ️  Create settings on every admin settings`
+> - [ ] `ℹ️  Settings view command`
+> - [ ] `ℹ️  Bot leave when alone`
 
 
 ---
