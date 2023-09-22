@@ -54,12 +54,39 @@ class Admin(commands.Cog):
         
 
     @commands.hybrid_command(name='settings', with_app_command=True, description="See server settings")
-    async def prefix(self, ctx: commands.Context):
+    async def settings(self, ctx: commands.Context):
+        server = function.db.find_one("settings", ctx.message.guild.id, "id")
+        if server == None:
+            function.db.set_settings(ctx.message.guild.id)
+
         prefix = function.db.find_one("settings", ctx.message.guild.id, "prefix")
         volume = function.db.find_one("settings", ctx.message.guild.id, "volume")
+        time = function.db.find_one("settings", ctx.message.guild.id, "time")
+
+        minutes, seconds = divmod(time, 60)
+        hours, minutes = divmod(minutes, 60)
+        days, hours = divmod(hours, 24)
+        weeks, days = divmod(days, 7)
+
+        time_format = ""
+    
+        if weeks > 0:
+            time_format += f"{weeks}w "
+        if days > 0:
+            time_format += f"{days}d "
+        if hours > 0:
+            time_format += f"{hours}h "
+        if minutes > 0:
+            time_format += f"{minutes}m "
+        if seconds > 0:
+            time_format += f"{seconds}s "
+        if not time_format:
+            time_format = "0s"
+
         embed = discord.Embed(
             description=f"**Prefix: `{prefix}`**\n"
             f"**Volume: `{volume}%`**\n"
+            f"**Time played: `{time_format.strip()}`**\n"
         )
         embed.set_author(name=ctx.guild.name, icon_url=self.bot.user.avatar.url)
         embed.set_thumbnail(url=ctx.guild.icon.url)

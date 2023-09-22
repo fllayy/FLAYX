@@ -81,7 +81,8 @@ class DBClass():
         CREATE TABLE IF NOT EXISTS settings (
                 id BIGINT PRIMARY KEY,
                 prefix VARCHAR(5),
-                volume TINYINT
+                volume TINYINT,
+                time INT
         )
         """
 
@@ -109,8 +110,8 @@ class DBClass():
     def set_settings(self, id):
         self.check()
         cursor = self.db_connection.cursor()
-        insert_query = "INSERT INTO settings (id, prefix,  volume) VALUES (%s, %s, %s)"
-        cursor.execute(insert_query, (id, '+', 100))
+        insert_query = "INSERT INTO settings (id, prefix, volume, time) VALUES (%s, %s, %s, %s)"
+        cursor.execute(insert_query, (id, '+', 100, 0))
         cursor.close()
         self.db_connection.commit()
 

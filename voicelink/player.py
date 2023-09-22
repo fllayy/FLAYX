@@ -5,6 +5,7 @@ from contextlib import suppress
 import function
 from discord.ui import View
 from views.player import MusicControlsView
+import time
 
 class Player(pomice.Player):
     """Custom pomice Player class."""
@@ -20,6 +21,7 @@ class Player(pomice.Player):
         self.autoplay: bool = False
         self.track = None
         self.history: list = []
+        self.joinTime: int = round(time.time())
 
         self.pause_votes = set()
         self.resume_votes = set()
@@ -94,6 +96,9 @@ class Player(pomice.Player):
     async def teardown(self):
         """Clear internal states, remove player controller and disconnect."""
         with suppress((discord.HTTPException), (KeyError)):
+            actualTime = function.db.find_one("settings", self.context.message.guild.id, "time")
+            timePlayed = actualTime + (round(time.time()) - self.joinTime)
+            function.db.update_one("settings", "time", timePlayed, self.context.message.guild.id)
             if self.controller:
                 await self.controller.delete()
             await self.destroy()

@@ -130,8 +130,9 @@ python main.py
 
 ## 🗺 Roadmap
 
-> - [ ] `ℹ️  Bot time server`
-> - [ ] `ℹ️  Bot leave when alone`
+> - [ ] `ℹ️  Fix bug`
+> - [ ] `ℹ️  Give me idea`
+> - [ ] `ℹ️  ...`
 
 
 ---
