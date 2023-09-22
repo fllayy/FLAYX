@@ -51,6 +51,20 @@ class Admin(commands.Cog):
         
         else:
             return await ctx.reply("You must be an admin or mod")
+        
+
+    @commands.hybrid_command(name='settings', with_app_command=True, description="See server settings")
+    async def prefix(self, ctx: commands.Context):
+        prefix = function.db.find_one("settings", ctx.message.guild.id, "prefix")
+        volume = function.db.find_one("settings", ctx.message.guild.id, "volume")
+        embed = discord.Embed(
+            description=f"**Prefix: `{prefix}`**\n"
+            f"**Volume: `{volume}%`**\n"
+        )
+        embed.set_author(name=ctx.guild.name, icon_url=self.bot.user.avatar.url)
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+        embed.set_footer(text="FLAYX", icon_url=self.bot.user.avatar.url)
+        return await ctx.reply(embed=embed)
 
 
 async def setup(bot: commands.Bot) -> None:

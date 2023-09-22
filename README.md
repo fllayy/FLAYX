@@ -131,7 +131,6 @@ python main.py
 ## 🗺 Roadmap
 
 > - [ ] `ℹ️  Bot time server`
-> - [ ] `ℹ️  Settings view command`
 > - [ ] `ℹ️  Bot leave when alone`
 
 
