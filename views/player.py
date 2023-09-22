@@ -29,7 +29,7 @@ class MusicControlsView(View):
 
             return await player.stop()
 
-        required = (len(interaction.user.voice.channel.members)-1) / 2.5
+        required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
         player.skip_votes.add(interaction.user.author)
 
         if len(player.skip_votes) >= required:
@@ -57,7 +57,7 @@ class MusicControlsView(View):
 
                 return await player.set_pause(False)
             
-            required = (len(interaction.user.voice.channel.members)-1) / 2.5
+            required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
             player.resume_votes.add(interaction.user)
 
             if len(player.resume_votes) >= required:
@@ -81,7 +81,7 @@ class MusicControlsView(View):
 
                 return await player.set_pause(True)
             
-            required = (len(interaction.user.voice.channel.members)-1) / 2.5
+            required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
             player.pause_votes.add(interaction.user)
 
             if len(player.pause_votes) >= required:
@@ -105,7 +105,7 @@ class MusicControlsView(View):
             await interaction.response.send_message("Player has been stopped.", delete_after=10)
             return await player.teardown()
 
-        required = (len(interaction.user.voice.channel.members)-1) / 2.5
+        required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
         player.stop_votes.add(interaction.user)
 
         if len(player.stop_votes) >= required:
@@ -146,7 +146,7 @@ class MusicControlsView(View):
             await interaction.response.send_message("The queue has been shuffled.")
             return player.queue.shuffle()
 
-        required = (len(interaction.user.voice.channel.members)-1) / 2.5
+        required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
         player.shuffle_votes.add(interaction.user)
 
         if len(player.shuffle_votes) >= required:
