@@ -5,7 +5,7 @@ import math
 
 class MusicControlsView(View):
     def __init__(self, player):
-        super().__init__()
+        super().__init__(timeout=None)
         self.player = player
 
     
