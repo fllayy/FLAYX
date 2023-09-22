@@ -136,7 +136,7 @@ class MusicControlsView(View):
     async def shuffle_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         player = self.player
 
-        if len(player.queue.get_queue()) < 1:
+        if len(player.queue.get_queue()) < 3:
             return await interaction.response.send_message(
                 "The queue must have at least 3 tracks to be shuffled.",
                 delete_after=15,
