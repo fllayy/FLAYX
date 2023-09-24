@@ -117,11 +117,12 @@ class Music(commands.Cog):
         if isinstance(results, pomice.Playlist):
             for track in results.tracks:
                 player.queue.put(track)
+            await ctx.reply(f"Added **{track.title}** [`{function.convertMs(track.length)}`] is add to queue.")
         else:
             track = results[0]
+            await ctx.reply(f"Added **{track.title}** [`{function.convertMs(track.length)}`] is add to queue.")
             player.queue.put(track)
 
-        await ctx.reply(f"Added **{track.title}** [`{function.convertMs(track.length)}`] is add to queue.")
 
         if not player.is_playing:
             await player.do_next()

@@ -131,7 +131,8 @@ python main.py
 ## 🗺 Roadmap
 
 > - [ ] `ℹ️  Fix bug`
-> - [ ] `ℹ️  Give me idea`
+> - [ ] `ℹ️  See if new play response work`
+> - [ ] `ℹ️  Add autoplay status to player`
 > - [ ] `ℹ️  ...`
 
 
