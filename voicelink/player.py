@@ -17,6 +17,7 @@ class Player(pomice.Player):
         self.queue = pomice.Queue()
         self.controller: discord.Message = None
         self.context: commands.Context = None
+        self.voicechannel: discord.VoiceChannel = None
         self.dj: discord.Member = None
         self.autoplay: bool = False
         self.track = None
@@ -45,8 +46,7 @@ class Player(pomice.Player):
         try:
             track: pomice.Track = self.queue.get()
         except pomice.QueueEmpty:
-            if self.autoplay:
-                print(self.history)
+            if self.autoplay and len(self.voicechannel.members) > 1:
                 new = await self.get_recommendations(track=self.track)
                 for track in new.tracks:
                     if track != self.track and track not in self.history:
@@ -99,13 +99,14 @@ class Player(pomice.Player):
             actualTime = function.db.find_one("settings", self.context.message.guild.id, "time")
             timePlayed = actualTime + (round(time.time()) - self.joinTime)
             function.db.update_one("settings", "time", timePlayed, self.context.message.guild.id)
+            await self.destroy()
             if self.controller:
                 await self.controller.delete()
-            await self.destroy()
             
 
 
     async def set_context(self, ctx: commands.Context):
         """Set context for the player"""
         self.context = ctx
+        self.voicechannel = ctx.author.voice.channel
         self.dj = ctx.author
