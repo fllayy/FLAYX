@@ -131,9 +131,8 @@ python main.py
 ## 🗺 Roadmap
 
 > - [ ] `ℹ️  Fix bug`
-> - [ ] `ℹ️  See if new play response work`
-> - [ ] `ℹ️  Add autoplay status to player`
-> - [ ] `ℹ️  group command for better name`
+> - [ ] `ℹ️  See if bot stay in voc if solo and loop mode`
+> - [ ] `ℹ️  group command for better name (settings)`
 > - [ ] `ℹ️  message when bot join server`
 > - [ ] `ℹ️  ...`
 

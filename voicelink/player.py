@@ -86,7 +86,7 @@ class Player(pomice.Player):
         embed.set_author(name=f"Music Controller | {self.context.author.voice.channel.name}", icon_url=self.bot.user.avatar.url)
 
         embed.set_footer(
-        text=f"Queue Length: {len(self.queue)} | Duration: {function.convertMs(track.length)} | Volume: {self.volume}%",
+        text=f"Queue Length: {len(self.queue)} | Duration: {function.convertMs(track.length)} | Volume: {self.volume}% | Autoplay: {self.autoplay}",
         )
 
         self.controller = await self.context.send(embed=embed, view=MusicControlsView(self))
