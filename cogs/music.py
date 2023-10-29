@@ -591,6 +591,10 @@ class Music(commands.Cog):
                 delete_after=7,
             )
         
+        if status == "False":
+            status = 0
+        else:
+            status = 1
         status = bool(status)
         
         if self.is_privileged(ctx):
