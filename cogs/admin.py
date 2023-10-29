@@ -65,15 +65,9 @@ class Admin(commands.Cog):
 
         minutes, seconds = divmod(time, 60)
         hours, minutes = divmod(minutes, 60)
-        days, hours = divmod(hours, 24)
-        weeks, days = divmod(days, 7)
 
         time_format = ""
     
-        if weeks > 0:
-            time_format += f"{weeks}w "
-        if days > 0:
-            time_format += f"{days}d "
         if hours > 0:
             time_format += f"{hours}h "
         if minutes > 0:
