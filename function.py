@@ -68,7 +68,7 @@ class DBClass():
                 database = MYSQL_DATABASE
             )
             end_time = time.time()
-            ping_time = (end_time - start_time) * 100
+            ping_time = (end_time - start_time) * 10
             conn.close()
             return ping_time
         except Exception as e:
