@@ -131,7 +131,6 @@ python main.py
 ## 🗺 Roadmap
 
 > - [ ] `ℹ️  Fix bug`
-> - [ ] `ℹ️  Fix /autoplay command`
 > - [ ] `ℹ️  group command for better name (settings)`
 > - [ ] `ℹ️  message when bot join server`
 > - [ ] `ℹ️  ...`
