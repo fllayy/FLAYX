@@ -47,15 +47,18 @@ class Player(pomice.Player):
             track: pomice.Track = self.queue.get()
         except pomice.QueueEmpty:
             if self.autoplay and len(self.voicechannel.members) > 1:
-                new = await self.get_recommendations(track=self.track)
-                for track in new.tracks:
-                    if track != self.track and track not in self.history:
-                        newtrack = track
-                        break
-                self.track = newtrack
-                if len(self.history) >= 5:
-                    self.history.pop(0)
-                self.history.append(self.track)
+                try:
+                    new = await self.get_recommendations(track=self.track)
+                    for track in new.tracks:
+                        if track != self.track and track not in self.history:
+                            newtrack = track
+                            break
+                    self.track = newtrack
+                    if len(self.history) >= 5:
+                        self.history.pop(0)
+                    self.history.append(self.track)
+                except Exception:
+                    return await self.teardown()
             else:
                 return await self.teardown()
 
@@ -101,7 +104,8 @@ class Player(pomice.Player):
             function.db.update_one("settings", "time", timePlayed, self.context.message.guild.id)
             await self.destroy()
             if self.controller:
-                await self.controller.delete()
+                with suppress(discord.HTTPException):
+                    await self.controller.delete()
             
 
 
