@@ -8,6 +8,7 @@ from views.help import HelpView
 import function
 from typing import List
 from voicelink.player import Player
+import asyncio
 
 
 class Music(commands.Cog):
@@ -54,11 +55,13 @@ class Music(commands.Cog):
 
     @commands.Cog.listener()
     async def on_pomice_track_stuck(self, player: Player, track, _):
-        await player.teardown()
+        await asyncio.sleep(10)
+        await player.do_next()
 
     @commands.Cog.listener()
     async def on_pomice_track_exception(self, player: Player, track, _):
-        await player.teardown()
+        await asyncio.sleep(10)
+        await player.do_next()
 
 
 
