@@ -9,6 +9,7 @@ import function
 from typing import List
 from voicelink.player import Player
 import asyncio
+import time
 
 
 class Music(commands.Cog):
@@ -50,17 +51,21 @@ class Music(commands.Cog):
 
 
     @commands.Cog.listener()
-    async def on_pomice_track_end(self, player: Player, track, _):
+    async def on_pomice_track_end(self, player: pomice.Player, track, _):
         await player.do_next()
 
     @commands.Cog.listener()
-    async def on_pomice_track_stuck(self, player: Player, track, _):
+    async def on_pomice_track_stuck(self, player: pomice.Player, track, _):
         await asyncio.sleep(10)
         await player.do_next()
 
     @commands.Cog.listener()
-    async def on_pomice_track_exception(self, player: Player, track, _):
-        await asyncio.sleep(10)
+    async def on_pomice_track_exception(self, player: pomice.Player, track, _):
+        try:
+            await player.context.send(f"Please wait for 10 seconds.", delete_after=10)
+            await time.sleep(10)
+        except Exception:
+            pass
         await player.do_next()
 
 
