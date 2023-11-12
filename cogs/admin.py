@@ -37,7 +37,7 @@ class Admin(commands.Cog):
             return await ctx.reply("You must be an admin or mod")
         
 
-    @commands.hybrid_command(name='prefix', with_app_command=True, description="Change the volume")
+    @commands.hybrid_command(name='prefix', with_app_command=True, description="Change the prefix")
     @app_commands.describe(prefix="prefix str.")
     async def prefix(self, ctx: commands.Context, prefix: str):
 
