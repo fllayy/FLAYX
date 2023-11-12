@@ -20,7 +20,6 @@ class Player(pomice.Player):
         self.voicechannel: discord.VoiceChannel = None
         self.dj: discord.Member = None
         self.autoplay: bool = False
-        self.track = None
         self.history: list = []
         self.joinTime: int = round(time.time())
 
@@ -47,16 +46,17 @@ class Player(pomice.Player):
             track: pomice.Track = self.queue.get()
         except pomice.QueueEmpty:
             if self.autoplay and len(self.voicechannel.members) > 1:
+                actualtrack: pomice.Track = self.history[len(self.history) - 1]
                 try:
-                    new = await self.get_recommendations(track=self.track)
+                    new = await self.get_recommendations(track=actualtrack)
                     for track in new.tracks:
-                        if track != self.track and track not in self.history:
+                        if track != actualtrack and track not in self.history:
                             newtrack = track
                             break
-                    self.track = newtrack
+                    actualtrack = newtrack
                     if len(self.history) >= 5:
                         self.history.pop(0)
-                    self.history.append(self.track)
+                    self.history.append(actualtrack)
                 except Exception:
                     return await self.teardown()
             else:

@@ -135,10 +135,9 @@ class Music(commands.Cog):
         if not player.is_playing:
             await player.do_next()
 
-        player.track = player.current
         if len(player.history) >= 5:
             player.history.pop(0)
-        player.history.append(player.track)
+        player.history.append(player.current)
 
     
     @commands.hybrid_command(name='stop', with_app_command = True, description = "Stop the player")
@@ -379,10 +378,9 @@ class Music(commands.Cog):
             if not player.is_playing:
                 await player.do_next()
 
-            player.track = player.current
             if len(player.history) >= 5:
                 player.history.pop(0)
-            player.history.append(player.track)
+            player.history.append(player.current)
         else:
             return await ctx.reply("You must be an admin or dj")
 
@@ -425,10 +423,9 @@ class Music(commands.Cog):
             if not player.is_playing:
                 await player.do_next()
 
-            player.track = player.current
             if len(player.history) >= 5:
                 player.history.pop(0)
-            player.history.append(player.track)
+            player.history.append(player.current)
         
         else:
             return await ctx.reply("You must be an admin or dj")
