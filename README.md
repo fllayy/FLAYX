@@ -50,7 +50,6 @@ python main.py
 ## 🗺 Roadmap
 
 > - [ ] `ℹ️  Fix bug`
-> - [ ] `ℹ️  Re-do @cmd to say the server prfix and delete ephemeral`
 > - [ ] `ℹ️  group command for better name (settings)`
 > - [ ] `ℹ️  ...`
 
