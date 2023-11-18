@@ -24,11 +24,11 @@ class FLAYX(commands.Bot):
                     print(f"Loaded {filename[:-3]}")
                 except Exception as e:
                     print(traceback.format_exc())
-        # try:
-        #     synced = await self.tree.sync()
-        #     print(f"Synced {len(synced)} slash command(s)")
-        # except Exception as e:
-        #     print("Error:", e)
+        try:
+            synced = await self.tree.sync()
+            print(f"Synced {len(synced)} slash command(s)")
+        except Exception as e:
+            print("Error:", e)
 
 
     async def on_ready(self) -> None:
