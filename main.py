@@ -16,16 +16,6 @@ class FLAYX(commands.Bot):
         super().__init__(*args, **kwargs)
 
 
-    async def on_message(self, message: discord.Message, /) -> None:
-        if message.author.bot or not message.guild:
-            return False
-
-        if self.user.id in message.raw_mentions and not message.mention_everyone:
-            await message.reply("My prefix is `+`", ephemeral = True)
-
-        await self.process_commands(message)
-
-
     async def setup_hook(self):
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
