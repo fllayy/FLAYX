@@ -129,10 +129,10 @@ class Music(commands.Cog):
         if isinstance(results, pomice.Playlist):
             for track in results.tracks:
                 player.queue.put(track)
-            await ctx.reply(f"Added **{track.title}** [`{function.convertMs(track.length)}`] is add to queue.")
+            await ctx.reply(f"Added **[{track.title}](<{track.uri}>)** [`{function.convertMs(track.length)}`] is add to queue.")
         else:
             track = results[0]
-            await ctx.reply(f"Added **{track.title}** [`{function.convertMs(track.length)}`] is add to queue.")
+            await ctx.reply(f"Added **[{track.title}](<{track.uri}>)** [`{function.convertMs(track.length)}`] is add to queue.")
             player.queue.put(track)
 
 
@@ -377,7 +377,7 @@ class Music(commands.Cog):
                 track = results[0]
                 player.queue.put_at_front(track)
 
-            await ctx.reply(f"Added **{track.title}** [`{function.convertMs(track.length)}`] is add to top of the queue.")
+            await ctx.reply(f"Added **[{track.title}](<{track.uri}>)** [`{function.convertMs(track.length)}`] is add to top of the queue.")
 
             if not player.is_playing:
                 await player.do_next()
@@ -422,7 +422,7 @@ class Music(commands.Cog):
                 player.queue.put_at_front(track)
                 await player.stop()
 
-            await ctx.reply(f"Play **{track.title}** [`{function.convertMs(track.length)}`] now.")
+            await ctx.reply(f"Play **[{track.title}](<{track.uri}>)** [`{function.convertMs(track.length)}`] now.")
 
             if not player.is_playing:
                 await player.do_next()
@@ -541,7 +541,7 @@ class Music(commands.Cog):
         track = player.queue[index - 1]
         if self.is_privileged(ctx):
             player.queue.remove(track)
-            await ctx.reply(f"The track `{track.title}` is removed from the queue.")
+            await ctx.reply(f"The track `[{track.title}](<{track.uri}>)` is removed from the queue.")
         else:
             await ctx.reply("You don't have permission to do this.")
 
