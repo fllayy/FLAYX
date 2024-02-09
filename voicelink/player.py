@@ -8,7 +8,7 @@ from views.player import MusicControlsView
 import time
 
 class Player(pomice.Player):
-    """Custom pomice Player class."""
+    """Player class."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
