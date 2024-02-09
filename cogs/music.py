@@ -28,6 +28,8 @@ class Music(commands.Cog):
             port=int(function.LAVALINK_PORT),
             password=function.LAVALINK_PASSWORD,
             identifier="MAIN",
+            apple_music = True
+
         )
         print(f"Node is ready!")
 
