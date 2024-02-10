@@ -34,3 +34,10 @@ class Playlist(commands.Cog):
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Playlist(bot))
+
+
+#playlist create
+#playlist delete
+#playlist add
+#playlist remove
+#playlist see
