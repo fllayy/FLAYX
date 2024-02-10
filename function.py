@@ -84,13 +84,20 @@ class DBClass():
                 prefix VARCHAR(5),
                 volume TINYINT,
                 time INT
-            )
+            );
             """,
             """
             CREATE TABLE IF NOT EXISTS users (
                 id BIGINT PRIMARY KEY,
                 rankLvl INT
-            )
+            );
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS playlist (
+                id BIGINT PRIMARY KEY,
+                name TEXT,
+                tracks LONGTEXT
+            );
             """
         ]
 
@@ -136,11 +143,21 @@ class DBClass():
         cursor.close()
         self.db_connection.commit()
 
+
     def set_user(self, id):
         self.check()
         cursor = self.db_connection.cursor()
         insert_query = "INSERT INTO users (id, rankLvl) VALUES (%s, %s)"
         cursor.execute(insert_query, (id, 0))
+        cursor.close()
+        self.db_connection.commit()
+
+
+    def create_playlist(self, id, name):
+        self.check()
+        cursor = self.db_connection.cursor()
+        insert_query = "INSERT INTO playlist (id, name) VALUES (%s, %s)"
+        cursor.execute(insert_query, (id, name))
         cursor.close()
         self.db_connection.commit()
                   
@@ -155,17 +172,23 @@ except Exception as e:
 
 async def get_user_rank(userId):
     rank = db.find_one("users", userId, "rankLvl")
+    if rank == 0:
+        rank = "Base"
+    else:
+        rank = "Premium"
+
     return rank
+
 
 async def create_account(ctx):
     from views.playlist import CreateView
     view = CreateView()
     embed=discord.Embed(title="Do you want to create an account on FLAYX ?")
     embed.description = f"> Plan: Base | 5 Playlist | 500 tracks in each playlist."
-    embed.add_field(name="Terms of Service:", value="‌    ➥ We assure you that all your data on FLAYX will not be disclosed to any third party\n"
-                                                    "‌    ➥ We will not perform any data analysis on your data\n"
-                                                    "‌    ➥ You have the right to immediately stop the services we offer to you\n"
-                                                    "‌    ➥ Please do not abuse our services, such as affecting other users\n", inline=False)
+    embed.add_field(name="Terms of Service:", value="‌➥ We assure you that all your data on FLAYX will not be disclosed to any third party\n"
+                                                    "➥ We will not perform any data analysis on your data\n"
+                                                    "➥ You have the right to immediately stop the services we offer to you\n"
+                                                    "➥ Please do not abuse our services, such as affecting other users\n", inline=False)
     
     message = await ctx.send(embed=embed, view=view, ephemeral=True)
     view.response = message
@@ -173,3 +196,4 @@ async def create_account(ctx):
     await view.wait()
     if view.value:
         db.set_user(ctx.author.id)
+        db.create_playlist(ctx.author.id, "❤️")
