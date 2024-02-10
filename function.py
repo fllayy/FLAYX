@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import mysql.connector
 import time
+import discord
 
 
 def convertMs(milliseconds):
@@ -76,22 +77,33 @@ class DBClass():
 
 
     def create_tables(self):
-        self.check()
-        create_server_table_query = """
-        CREATE TABLE IF NOT EXISTS settings (
+        create_table_queries = [
+            """
+            CREATE TABLE IF NOT EXISTS settings (
                 id BIGINT PRIMARY KEY,
                 prefix VARCHAR(5),
                 volume TINYINT,
                 time INT
-        )
-        """
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id BIGINT PRIMARY KEY,
+                rankLvl INT
+            )
+            """
+        ]
 
         cursor = self.db_connection.cursor()
-        cursor.execute(create_server_table_query)
-        cursor.close()
-        self.db_connection.commit()
-
-        print('Created tables Successfully!')
+        try:
+            for query in create_table_queries:
+                cursor.execute(query)
+            self.db_connection.commit()
+            print('Tables created Successfully!')
+        except Exception as e:
+            print('Error creating tables:', e)
+        finally:
+            cursor.close()
 
 
     def find_one(self, table_name, id, row):
@@ -123,6 +135,14 @@ class DBClass():
         cursor.execute(select_query, (data, id))
         cursor.close()
         self.db_connection.commit()
+
+    def set_user(self, id):
+        self.check()
+        cursor = self.db_connection.cursor()
+        insert_query = "INSERT INTO users (id, rankLvl) VALUES (%s, %s)"
+        cursor.execute(insert_query, (id, 0))
+        cursor.close()
+        self.db_connection.commit()
                   
 
 
@@ -131,3 +151,25 @@ try:
     db.create_tables()
 except Exception as e:
     raise Exception("Not able to connect MYSQL! Reason:", e)
+
+
+async def get_user_rank(userId):
+    rank = db.find_one("users", userId, "rankLvl")
+    return rank
+
+async def create_account(ctx):
+    from views.playlist import CreateView
+    view = CreateView()
+    embed=discord.Embed(title="Do you want to create an account on FLAYX ?")
+    embed.description = f"> Plan: Base | 5 Playlist | 500 tracks in each playlist."
+    embed.add_field(name="Terms of Service:", value="‌    ➥ We assure you that all your data on FLAYX will not be disclosed to any third party\n"
+                                                    "‌    ➥ We will not perform any data analysis on your data\n"
+                                                    "‌    ➥ You have the right to immediately stop the services we offer to you\n"
+                                                    "‌    ➥ Please do not abuse our services, such as affecting other users\n", inline=False)
+    
+    message = await ctx.send(embed=embed, view=view, ephemeral=True)
+    view.response = message
+
+    await view.wait()
+    if view.value:
+        db.set_user(ctx.author.id)
