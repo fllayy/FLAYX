@@ -156,12 +156,11 @@ class DBClass():
     def create_playlist(self, id, name):
         self.check()
         cursor = self.db_connection.cursor()
-        insert_query = "INSERT INTO playlist (id, name) VALUES (%s, %s)"
+        insert_query = "INSERT INTO playlist (id, name, tracks) VALUES (%s, %s)"
         cursor.execute(insert_query, (id, name))
         cursor.close()
         self.db_connection.commit()
                   
-
 
 try:
     db = DBClass()
@@ -173,18 +172,20 @@ except Exception as e:
 async def get_user_rank(userId):
     rank = db.find_one("users", userId, "rankLvl")
     if rank == 0:
-        rank, maxPlaylist, maxTrack = "Base", 5, 500
+        rank, maxTrack = "Base", 75
+    elif rank == 0:
+        rank, maxTrack = "Premium", 500
     else:
-        rank = "Premium"
+        rank, maxTrack = None, None
 
-    return rank, maxPlaylist, maxTrack
+    return rank, maxTrack
 
 
 async def create_account(ctx):
     from views.playlist import CreateView
     view = CreateView()
     embed=discord.Embed(title="Do you want to create an account on FLAYX ?")
-    embed.description = f"> Plan: Base | 5 Playlist | 500 tracks in each playlist."
+    embed.description = f"> Plan: Base | 75 tracks in the playlist."
     embed.add_field(name="Terms of Service:", value="‌➥ We assure you that all your data on FLAYX will not be disclosed to any third party\n"
                                                     "➥ We will not perform any data analysis on your data\n"
                                                     "➥ You have the right to immediately stop the services we offer to you\n"
