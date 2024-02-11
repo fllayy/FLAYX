@@ -173,11 +173,11 @@ except Exception as e:
 async def get_user_rank(userId):
     rank = db.find_one("users", userId, "rankLvl")
     if rank == 0:
-        rank = "Base"
+        rank, maxPlaylist, maxTrack = "Base", 5, 500
     else:
         rank = "Premium"
 
-    return rank
+    return rank, maxPlaylist, maxTrack
 
 
 async def create_account(ctx):
