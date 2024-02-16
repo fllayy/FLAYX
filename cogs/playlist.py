@@ -4,6 +4,7 @@ from discord import app_commands
 from voicelink.player import Player
 import function
 from views.help import HelpView
+import pomice
 
 
 class Playlist(commands.Cog):
@@ -32,28 +33,52 @@ class Playlist(commands.Cog):
 
 
     @playlist.command(name="add", with_app_command = True, description = "Add a song to your playlist")
-    @app_commands.describe(link="Link of the song.")
-    async def add(self, ctx: commands.Context, link):
+    @app_commands.describe(name="Name or link of the song.")
+    async def add(self, ctx: commands.Context, name):
         rank, maxTrack = await function.get_user_rank(ctx.author.id)
         if rank == None:
             await function.create_account(ctx)
 
-        actual = function.db.find_one("playlist", ctx.author.id, "tracks")
-        if actual == "":
-            actual = link + ','
-            print(actual)
-            function.db.update_one("playlist", "tracks", actual, ctx.author.id)
+        track = await pomice.NodePool.get_node().get_tracks(query=name, ctx=ctx)
+
+        if track == None:
+            await ctx.reply("Track was not found", ephemeral=True)
+        elif track[0].is_stream:
+            await ctx.reply("Can't add stream to playlist", ephemeral=True)
         else:
-            actual = actual.split(',')
-            actual[len(actual)-1] = link
-            actual = (str(actual)).replace("[", "")
-            actual = actual.replace("]", "")
-            print(actual)
-            function.db.update_one("playlist", "tracks", actual, ctx.author.id)
+            playlist = function.db.find_one("playlist", ctx.author.id, "tracks")
 
+            if playlist == "":
+                playlist = track[0].uri + ','
+                function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
+            else:
+                playlist = playlist + track[0].uri + ","
+                function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
 
+            await ctx.reply(f"**[{track[0].title}](<{track[0].uri}>)** is added to ❤️", ephemeral=True)
+
+        
     @playlist.command(name="remove", with_app_command = True, description = "Remove a song to your playlist")
-    async def remove(self, ctx: commands.Context):
+    @app_commands.describe(link="Link of the song.")
+    async def remove(self, ctx: commands.Context, link):
+        rank, maxTrack = await function.get_user_rank(ctx.author.id)
+        if rank == None:
+            await function.create_account(ctx)
+
+        track = await pomice.NodePool.get_node().get_tracks(query=link, ctx=ctx)
+        
+        playlist = function.db.find_one("playlist", ctx.author.id, "tracks")
+
+        try:
+            playlist = playlist.replace(track[0].uri+',', "")
+            function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
+            await ctx.reply(f"**[{track[0].title}](<{track[0].uri}>)** is removed from ❤️", ephemeral=True)
+        except Exception as e:
+            print("Error on remove song from playlist:", e)
+            await ctx.reply("An error occured", ephemeral=True)
+
+    @playlist.command(name="play", with_app_command = True, description = "Play your playlist")
+    async def play(self, ctx: commands.Context):
         pass #todo
 
 

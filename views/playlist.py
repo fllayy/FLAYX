@@ -1,8 +1,4 @@
 import discord
-import function as func
-
-from math import ceil
-from typing import Any, TYPE_CHECKING
 
 
 class agree(discord.ui.Button):
