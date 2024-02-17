@@ -1,6 +1,7 @@
 from discord.ui import View, Button
 import discord
 import math
+import function
 
 
 class MusicControlsView(View):
@@ -131,30 +132,24 @@ class MusicControlsView(View):
         else:
             await interaction.response.send_message("You don't have permission to do this.")
 
-
-    @discord.ui.button(label="Shuffle", emoji="🔀", style=discord.ButtonStyle.grey, custom_id="shuffle_button")
-    async def shuffle_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+            
+    @discord.ui.button(label="Favorite", emoji="❤️", style=discord.ButtonStyle.blurple, custom_id="favorite_button")
+    async def favorite_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         player = self.player
 
-        if len(player.queue.get_queue()) < 3:
-            return await interaction.response.send_message(
-                "The queue must have at least 3 tracks to be shuffled.",
-                delete_after=15,
-            )
-        
-        if player.dj == interaction.user or interaction.user.guild_permissions.kick_members:
-            await interaction.response.send_message("The queue has been shuffled.")
-            return player.queue.shuffle()
+        rank, maxTrack = await function.get_user_rank(interaction.user.id)
+        if rank == None:
+            await function.create_account(interaction)
 
-        required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
-        player.shuffle_votes.add(interaction.user)
+        playlist = function.db.find_one("playlist", interaction.user.id, "tracks")
 
-        if len(player.shuffle_votes) >= required:
-            await interaction.channel.send("Vote to shuffle passed. Shuffle queue.", delete_after=10)
-            player.shuffle_votes.clear()
-            player.queue.shuffle()
+        if playlist == "":
+            playlist = player.current.uri + ','
+            function.db.update_one("playlist", "tracks", playlist, interaction.user.id)
         else:
-            await interaction.channel.send(
-            f"{interaction.user.mention} has voted to shuffle the queue. Votes: {len(player.shuffle_votes)}/{required} ",
-            delete_after=15,
-            )
+            if len(playlist.split(',')) >= maxTrack:
+                await interaction.response.send_message("You playlist is full", ephemeral=True)
+            playlist = playlist + player.current.uri + ","
+            function.db.update_one("playlist", "tracks", playlist, interaction.user.id)
+
+        await interaction.response.send_message(f"**[{player.current.title}](<{player.current.uri}>)** is added to **❤️**", ephemeral=True)
