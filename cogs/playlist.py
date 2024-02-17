@@ -5,6 +5,7 @@ from voicelink.player import Player
 import function
 from views.help import HelpView
 import pomice
+from views.paginator import PaginationMenu
 
 
 class Playlist(commands.Cog):
@@ -122,7 +123,43 @@ class Playlist(commands.Cog):
 
     @playlist.command(name="show", with_app_command = True, description = "Show your playlist")
     async def show(self, ctx: commands.Context):
-        pass #todo
+        rank, maxTrack = await function.get_user_rank(ctx.author.id)
+        if rank == None:
+            await function.create_account(ctx)
+
+        playlist = function.db.find_one("playlist", ctx.author.id, "tracks")
+        playlist = playlist.split(",")
+        playlist.pop()
+
+        if len(playlist) <= 0:
+            return await ctx.reply("Your playlist is empty.", delete_after=7)
+
+        queue_list = []
+
+        node = pomice.NodePool.get_node()
+
+        for tracks in playlist:
+            track = await node.get_tracks(query=tracks, ctx=ctx)
+            queue_list.append(track[0])
+
+        pages = []
+
+        for i in range(0, len(queue_list), 15):
+            page = queue_list[i:i + 15]
+            page_content = []
+
+            for index, track in enumerate(page, start=i + 1):
+                time = function.convertMs(track.length)
+                truncated_title = track.title[:25] if len(track.title) > 25 else track.title
+                if track.requester == None:
+                    track.requester = self.bot.user
+                page_content.append(f"`{index}.` `[{time}]` [{truncated_title}]({track.uri}) {track.requester.mention}")
+
+            pages.append("\n".join(page_content))
+
+        
+        menu = PaginationMenu(ctx, pages)
+        await menu.show_page()
             
 
 
