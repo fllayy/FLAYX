@@ -29,5 +29,5 @@ class CreateView(discord.ui.View):
             child.disabled = True
         try:
             await self.response.edit(view=self)
-        except:
+        except TimeoutError:
             pass
