@@ -7,6 +7,7 @@
 <p align="center">
 <img src="https://img.shields.io/badge/Python-3776AB.svg?style&logo=Python&logoColor=white" alt="Python" />
 </p>
+<img src="https://www.codefactor.io/repository/github/fllayy/flayx/badge" alt="Code notation" />
 <img src="https://img.shields.io/github/languages/top/fllayy/FLAYX?style&color=5D6D7E" alt="GitHub top language" />
 <img src="https://img.shields.io/github/languages/code-size/fllayy/FLAYX?style&color=5D6D7E" alt="GitHub code size in bytes" />
 <img src="https://img.shields.io/github/license/fllayy/FLAYX?style&color=5D6D7E" alt="GitHub license" />
