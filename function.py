@@ -156,8 +156,8 @@ class DBClass():
     def create_playlist(self, id, name):
         self.check()
         cursor = self.db_connection.cursor()
-        insert_query = "INSERT INTO playlist (id, name, tracks) VALUES (%s, %s)"
-        cursor.execute(insert_query, (id, name))
+        insert_query = "INSERT INTO playlist (id, name, tracks) VALUES (%s, %s, %s)"
+        cursor.execute(insert_query, (id, name, ""))
         cursor.close()
         self.db_connection.commit()
                   
@@ -191,10 +191,20 @@ async def create_account(ctx):
                                                     "➥ You have the right to immediately stop the services we offer to you\n"
                                                     "➥ Please do not abuse our services, such as affecting other users\n", inline=False)
     
-    message = await ctx.send(embed=embed, view=view, ephemeral=True)
-    view.response = message
+    try:
+        message = await ctx.send(embed=embed, view=view, ephemeral=True)
+        view.response = message
 
-    await view.wait()
-    if view.value:
-        db.set_user(ctx.author.id)
-        db.create_playlist(ctx.author.id, "❤️")
+        await view.wait()
+        if view.value:
+            db.set_user(ctx.author.id)
+            db.create_playlist(ctx.author.id, "❤️")
+
+    except Exception as WasAnInteraction:
+        message = await ctx.response.send_message(embed=embed, view=view, ephemeral=True)
+        view.response = message
+
+        await view.wait()
+        if view.value:
+            db.set_user(ctx.user.id)
+            db.create_playlist(ctx.user.id, "❤️")
