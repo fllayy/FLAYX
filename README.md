@@ -13,6 +13,8 @@
 <img src="https://img.shields.io/github/license/fllayy/FLAYX?style&color=5D6D7E" alt="GitHub license" />
 </div>
 
+## discord.com/invite/mtuRkqMr4u
+
 ## 🚀 Getting Started
 
 ### ✔️ Prerequisites
