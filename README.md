@@ -45,7 +45,11 @@ pip install -r requirements.txt
 ```sh
 python main.py
 ```
+### 🔄 Update FLAYX
 
+```sh
+python update.py -h
+```
 
 ---
 
