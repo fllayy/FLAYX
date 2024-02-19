@@ -8,6 +8,7 @@ from discord.ext import commands
 from discord import app_commands
 from discord.message import Message
 import function
+import update
 
 
 class FLAYX(commands.Bot):
@@ -24,6 +25,9 @@ class FLAYX(commands.Bot):
                     print(f"Loaded {filename[:-3]}")
                 except Exception as e:
                     print(traceback.format_exc())
+
+        update.check_version()
+
         try:
             synced = await self.tree.sync()
             print(f"Synced {len(synced)} slash command(s)")
@@ -59,4 +63,6 @@ bot = FLAYX(command_prefix=get_prefix,
             intents=intents,
             activity=discord.Activity(type=discord.ActivityType.listening, name='Starting...')
             )
-bot.run(function.TOKEN) #, log_handler=None
+if __name__ == "__main__":
+    update.check_version(with_msg=True)
+    bot.run(function.TOKEN) #, log_handler=None
