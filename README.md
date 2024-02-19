@@ -13,7 +13,7 @@
 <img src="https://img.shields.io/github/license/fllayy/FLAYX?style&color=5D6D7E" alt="GitHub license" />
 </div>
 
-## [Discord server here](discord.com/invite/mtuRkqMr4u)
+## [Discord server here](https://discord.com/invite/mtuRkqMr4u)
 
 ## 🚀 Getting Started
 
