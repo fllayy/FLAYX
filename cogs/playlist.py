@@ -49,38 +49,44 @@ class Playlist(commands.Cog):
         elif track[0].is_stream:
             await ctx.reply("Can't add stream to playlist", ephemeral=True)
         else:
-            playlist = function.db.find_one("playlist", ctx.author.id, "tracks")
+            if track[0].uri not in playlist:
+                playlist = function.db.find_one("playlist", ctx.author.id, "tracks")
 
-            if playlist == "":
-                playlist = track[0].uri + ','
-                function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
+                if playlist == "":
+                    playlist = track[0].uri + ','
+                    function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
+                else:
+                    if len(playlist.split(',')) >= maxTrack:
+                        await ctx.reply("You playlist is full", ephemeral=True)
+                    playlist = playlist + track[0].uri + ","
+                    function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
+
+                await ctx.reply(f"**[{track[0].title}](<{track[0].uri}>)** is added to **❤️**", ephemeral=True)
             else:
-                if len(playlist.split(',')) >= maxTrack:
-                    await ctx.reply("You playlist is full", ephemeral=True)
-                playlist = playlist + track[0].uri + ","
-                function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
-
-            await ctx.reply(f"**[{track[0].title}](<{track[0].uri}>)** is added to **❤️**", ephemeral=True)
+                await ctx.reply("This is already in your playlist", ephemeral=True)
 
         
     @playlist.command(name="remove", with_app_command = True, description = "Remove a song to your playlist")
-    @app_commands.describe(link="Link of the song.")
-    async def remove(self, ctx: commands.Context, link):
+    @app_commands.describe(name="Link of the song.")
+    async def remove(self, ctx: commands.Context, name):
         rank, maxTrack = await function.get_user_rank(ctx.author.id)
         if rank == None:
             await function.create_account(ctx)
 
-        track = await pomice.NodePool.get_node().get_tracks(query=link, ctx=ctx)
+        track = await pomice.NodePool.get_node().get_tracks(query=name, ctx=ctx)
         
         playlist = function.db.find_one("playlist", ctx.author.id, "tracks")
 
-        try:
-            playlist = playlist.replace(track[0].uri+',', "")
-            function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
-            await ctx.reply(f"**[{track[0].title}](<{track[0].uri}>)** is removed from **❤️**", ephemeral=True)
-        except Exception as e:
-            print("Error on remove song from playlist:", e)
-            await ctx.reply("An error occured", ephemeral=True)
+        if track[0].uri in playlist:
+            try:
+                playlist = playlist.replace(track[0].uri+',', "")
+                function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
+                await ctx.reply(f"**[{track[0].title}](<{track[0].uri}>)** is removed from **❤️**", ephemeral=True)
+            except Exception as e:
+                print("Error on remove song from playlist:", e)
+                await ctx.reply("An error occured", ephemeral=True)
+        else:
+            await ctx.reply("This is not in your playlist.", ephemeral=True)
 
 
     @playlist.command(name="play", with_app_command = True, description = "Play your playlist")
@@ -123,6 +129,7 @@ class Playlist(commands.Cog):
 
     @playlist.command(name="show", with_app_command = True, description = "Show your playlist")
     async def show(self, ctx: commands.Context):
+
         rank, maxTrack = await function.get_user_rank(ctx.author.id)
         if rank == None:
             await function.create_account(ctx)

@@ -62,11 +62,11 @@ class MusicControlsView(View):
             player.resume_votes.add(interaction.user)
 
             if len(player.resume_votes) >= required:
-                await interaction.channel.send("Vote to resume passed. Resuming player.", delete_after=10)
+                await interaction.response.send_message("Vote to resume passed. Resuming player.", delete_after=10)
                 player.resume_votes.clear()
                 await player.set_pause(False)
             else:
-                await interaction.channel.send(
+                await interaction.response.send_message(
                     f"{interaction.user.mention} has voted to resume the player. Votes: {len(player.resume_votes)}/{required}",
                     delete_after=15,
                 )
@@ -143,13 +143,15 @@ class MusicControlsView(View):
 
         playlist = function.db.find_one("playlist", interaction.user.id, "tracks")
 
-        if playlist == "":
-            playlist = player.current.uri + ','
-            function.db.update_one("playlist", "tracks", playlist, interaction.user.id)
+        if player.current.uri not in playlist:
+            if playlist == "":
+                playlist = player.current.uri + ','
+                function.db.update_one("playlist", "tracks", playlist, interaction.user.id)
+            else:
+                if len(playlist.split(',')) >= maxTrack:
+                    await interaction.response.send_message("You playlist is full", ephemeral=True)
+                playlist = playlist + player.current.uri + ","
+                function.db.update_one("playlist", "tracks", playlist, interaction.user.id)
+            await interaction.response.send_message(f"**[{player.current.title}](<{player.current.uri}>)** is added to **❤️**", ephemeral=True)
         else:
-            if len(playlist.split(',')) >= maxTrack:
-                await interaction.response.send_message("You playlist is full", ephemeral=True)
-            playlist = playlist + player.current.uri + ","
-            function.db.update_one("playlist", "tracks", playlist, interaction.user.id)
-
-        await interaction.response.send_message(f"**[{player.current.title}](<{player.current.uri}>)** is added to **❤️**", ephemeral=True)
+            await interaction.response.send_message("This is already in your playlist", ephemeral=True)
