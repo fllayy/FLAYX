@@ -29,8 +29,8 @@ class Music(commands.Cog):
             password=function.LAVALINK_PASSWORD,
             identifier="MAIN",
             apple_music = True
-
         )
+
         print(f"Node is ready!")
 
     def required(self, ctx: commands.Context):
@@ -61,8 +61,8 @@ class Music(commands.Cog):
         try:
             await player.context.send(f"Please wait for 10 seconds.", delete_after=10)
             await asyncio.sleep(10)
-        except Exception:
-            pass
+        except Exception as e:
+            print("Error: ", e)
         await player.do_next()
 
     @commands.Cog.listener()
@@ -70,8 +70,8 @@ class Music(commands.Cog):
         try:
             await player.context.send(f"Please wait for 10 seconds.", delete_after=10)
             await asyncio.sleep(10)
-        except Exception:
-            pass
+        except Exception as e:
+            print("Error: ", e)
         await player.do_next()
 
 
@@ -123,7 +123,10 @@ class Music(commands.Cog):
                 await player.set_volume(volume=volume)
                 await player.set_context(ctx=ctx)
 
-        results = await player.get_tracks(search, ctx=ctx)
+        try:
+            results = await player.get_tracks(query=search, ctx=ctx)
+        except Exception as e:
+            return await ctx.reply("⚠️ An error occured", ephemeral=True)
 
         if not results:
             return await ctx.reply("No results were found for that search term", delete_after=7)
@@ -313,9 +316,9 @@ class Music(commands.Cog):
         player.pause_votes.add(ctx.author)
 
         if len(player.pause_votes) >= required:
-            await ctx.send("Vote to pause passed. Pausing player.", delete_after=10)
             player.pause_votes.clear()
             await player.set_pause(True)
+            await ctx.reply("Vote to pause passed. Pausing player.", delete_after=10)
         else:
             await ctx.reply(
                 f"{ctx.author.mention} has voted to pause the player. Votes: {len(player.pause_votes)}/{required}",
@@ -345,9 +348,9 @@ class Music(commands.Cog):
         player.resume_votes.add(ctx.author)
 
         if len(player.resume_votes) >= required:
-            await ctx.send("Vote to resume passed. Resuming player.", delete_after=10)
             player.resume_votes.clear()
             await player.set_pause(False)
+            await ctx.reply("Vote to resume passed. Resuming player.", delete_after=10)
         else:
             await ctx.reply(
                 f"{ctx.author.mention} has voted to resume the player. Votes: {len(player.resume_votes)}/{required}",
