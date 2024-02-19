@@ -2,11 +2,11 @@ import requests, zipfile, os, shutil, argparse
 from io import BytesIO
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-__version__ = "v0.1test"
+__version__ = "v0.2"
 
 GITHUB_API_URL = "https://api.github.com/repos/fllayy/FLAYX/releases/latest"
 FLAYX_URL = "https://github.com/fllayy/FLAYX/archive/"
-IGNORE_FILES = [".env"]
+IGNORE_FILES = [".env", ".git"]
 
 class bcolors:
     WARNING = '\033[93m'
