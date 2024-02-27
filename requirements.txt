@@ -1,7 +1,7 @@
 aiohttp==3.9.2
 discord.py==2.3.2
 mysql-connector-python==8.1.0
-orjson==3.9.7
+orjson==3.9.15
 python-dotenv==1.0.0
 websockets==11.0.3
 requests==2.31.0
