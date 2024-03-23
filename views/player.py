@@ -34,11 +34,11 @@ class MusicControlsView(View):
         player.skip_votes.add(interaction.user.author)
 
         if len(player.skip_votes) >= required:
-            await interaction.channel.send("Vote to skip passed. Skipping song.", delete_after=10)
+            await interaction.response.send_message("Vote to skip passed. Skipping song.", delete_after=10)
             player.skip_votes.clear()
             await player.stop()
         else:
-            await interaction.channel.send(
+            await interaction.response.send_message(
             f"{interaction.user.mention} has voted to skip the song. Votes: {len(player.skip_votes)}/{required} ",
             delete_after=15,
             )
@@ -86,11 +86,11 @@ class MusicControlsView(View):
             player.pause_votes.add(interaction.user)
 
             if len(player.pause_votes) >= required:
-                await interaction.channel.send("Vote to pause passed. Pausing player.", delete_after=10)
+                await interaction.response.send_message("Vote to pause passed. Pausing player.", delete_after=10)
                 player.pause_votes.clear()
                 await player.set_pause(True)
             else:
-                await interaction.channel.send(
+                await interaction.response.send_message(
                     f"{interaction.user.mention} has voted to pause the player. Votes: {len(player.pause_votes)}/{required}",
                     delete_after=15,
                 )
@@ -110,10 +110,10 @@ class MusicControlsView(View):
         player.stop_votes.add(interaction.user)
 
         if len(player.stop_votes) >= required:
-            await interaction.channel.send("Vote to stop passed. Stopping the player.", delete_after=10)
+            await interaction.response.send_message("Vote to stop passed. Stopping the player.", delete_after=10)
             await player.teardown()
         else:
-            await interaction.channel.send(
+            await interaction.response.send_message(
             f"{interaction.user.mention} has voted to stop the player. Votes: {len(player.stop_votes)}/{required}",
             delete_after=15,
             )

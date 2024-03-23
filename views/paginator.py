@@ -19,6 +19,11 @@ class PaginationMenu(View):
         else:
             self.message = await self.ctx.send(embed=embed, view=self)
 
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        await self.message.edit(view=self)
+
 
     @discord.ui.button(emoji="⬅️", custom_id="prev_button")
     async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
