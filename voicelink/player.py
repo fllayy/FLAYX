@@ -49,7 +49,7 @@ class Player(pomice.Player):
                 actualtrack: pomice.Track = self.history[len(self.history) - 1]
                 try:
                     new = await self.get_recommendations(track=actualtrack)
-                    for track in new.tracks:
+                    for track in new:
                         if track != actualtrack and track not in self.history:
                             newtrack = track
                             break

@@ -28,7 +28,9 @@ class Music(commands.Cog):
             port=int(function.LAVALINK_PORT),
             password=function.LAVALINK_PASSWORD,
             identifier="MAIN",
-            apple_music = True
+            apple_music = True,
+            spotify_client_id=function.SPOTIFY_CLIENT_ID,
+            spotify_client_secret=function.SPOTIFY_CLIENT_SECRET
         )
 
         print(f"Node is ready!")

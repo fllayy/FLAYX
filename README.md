@@ -1,6 +1,6 @@
 <div align="center">
 <h1 align="center">
-<img src="https://cdn.discordapp.com/attachments/1146153316787699712/1154103449093414942/JDBJcDH.png" width="100" />
+<img src="https://cdn.discordapp.com/avatars/1132750661197516831/e10f0544004c4e39f688885b3a804e96.webp?size=1024" width="100" />
 <br>FLAYX
 </h1>
 
@@ -57,8 +57,6 @@ python update.py -h
 ## 🗺 Roadmap
 
 > - [ ] `ℹ️  Fix bug like`
-> - `sometime player message is not deleted after the music end`
-> - `sometime player bleak and skip instantly the song`
 > - [ ] `ℹ️  ...`
 
 
