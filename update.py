@@ -57,9 +57,9 @@ def install(response, version):
         version (str): the version to install.
     """
     user_input = input(f"{bcolors.WARNING}--------------------------------------------------------------------------\n"
-                           "Note: Before proceeding, please ensure that there are no personal files or\n" \
-                           "sensitive information in the directory you're about to delete. This action\n" \
-                           "is irreversible, so it's important to double-check that you're making the \n" \
+                           "Note: Before proceeding, please ensure that there are no personal files or\n"
+                           "sensitive information in the directory you're about to delete. This action\n"
+                           "is irreversible, so it's important to double-check that you're making the \n"
                            f"right decision. {bcolors.ENDC} Continue with caution? (y/n) ")
         
     if user_input.lower() in ["y", "yes"]:
