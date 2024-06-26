@@ -1,6 +1,6 @@
 <div align="center">
 <h1 align="center">
-<img src="https://cdn.discordapp.com/avatars/1132750661197516831/e10f0544004c4e39f688885b3a804e96.webp?size=1024" width="100" />
+<img src="https://cdn.discordapp.com/avatars/1132750661197516831/706fe316bde9b528d64014b2bbbb1f2b.webp?size=1024" width="100" />
 <br>FLAYX
 </h1>
 
