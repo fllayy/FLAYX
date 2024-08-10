@@ -172,6 +172,7 @@ except Exception as e:
     raise Exception("Not able to connect MYSQL! Reason:", e)
 
 
+#--------------- Functions ---------------
 async def get_user_rank(userId):
     rank = db.find_one("users", userId, "rankLvl")
     if rank == 0:
