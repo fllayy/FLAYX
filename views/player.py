@@ -24,14 +24,8 @@ class MusicControlsView(View):
 
             return await player.stop()
 
-        if interaction.user == player.current.requester:
-            await interaction.response.send_message("The song requester has skipped the song.", delete_after=10)
-            player.skip_votes.clear()
-
-            return await player.stop()
-
         required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
-        player.skip_votes.add(interaction.user.author)
+        player.skip_votes.add(interaction.user)
 
         if len(player.skip_votes) >= required:
             await interaction.response.send_message("Vote to skip passed. Skipping song.", delete_after=10)

@@ -97,7 +97,7 @@ class Music(commands.Cog):
         if botPing > 5: botemoji = '😭'
         elif botPing > 1: botemoji = '😨'
         else: botemoji = '👌'
-        nodePing = (self.pomice.nodes['MAIN'].latency)/1000
+        nodePing = (self.pomice.nodes['MAIN'].latency)/100
         if nodePing > 5: nodeemoji = '😭'
         elif nodePing > 1: nodeemoji = '😨'
         else: nodeemoji = '👌'
@@ -193,12 +193,6 @@ class Music(commands.Cog):
 
         if self.is_privileged(ctx):
             await ctx.reply("Song has been skipped.", delete_after=10)
-            player.skip_votes.clear()
-
-            return await player.stop()
-
-        if ctx.author == player.current.requester:
-            await ctx.reply("The song requester has skipped the song.", delete_after=10)
             player.skip_votes.clear()
 
             return await player.stop()
