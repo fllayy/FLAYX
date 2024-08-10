@@ -38,86 +38,104 @@ class Playlist(commands.Cog):
     async def add(self, ctx: commands.Context, name):
         rank, maxTrack = await function.get_user_rank(ctx.author.id)
         if rank == None:
-            await function.create_account(ctx)
+            return await function.create_account(ctx)
 
-        playlist = function.db.find_one("playlist", ctx.author.id, "tracks")
+        playlist = function.db.find_one(function.Playlist, ctx.author.id)
 
-        track = await pomice.NodePool.get_node().get_tracks(query=name, ctx=ctx)
+        track_results = await pomice.NodePool.get_node().get_tracks(query=name, ctx=ctx)
 
-        if track == None:
+        if not track_results:
             await ctx.reply("Track was not found", ephemeral=True)
-        elif track[0].is_stream:
+
+        track = track_results[0]
+        if track.is_stream:
             await ctx.reply("Can't add stream to playlist", ephemeral=True)
+
+        if track.uri in playlist.tracks.split(','):
+            await ctx.reply("This is already in your playlist", ephemeral=True)
+
+        if len(playlist.tracks.split(',')) >= maxTrack:
+            await ctx.reply("Your playlist is full", ephemeral=True)
+
+        if playlist.tracks == "":
+            new_tracks = track.uri + ','
         else:
-            if track[0].uri not in playlist:
-                playlist = function.db.find_one("playlist", ctx.author.id, "tracks")
+            new_tracks = playlist.tracks + track.uri + ','
 
-                if playlist == "":
-                    playlist = track[0].uri + ','
-                    function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
-                else:
-                    if len(playlist.split(',')) >= maxTrack:
-                        await ctx.reply("You playlist is full", ephemeral=True)
-                    playlist = playlist + track[0].uri + ","
-                    function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
-
-                await ctx.reply(f"**[{track[0].title}](<{track[0].uri}>)** is added to **❤️**", ephemeral=True)
-            else:
-                await ctx.reply("This is already in your playlist", ephemeral=True)
+        function.db.update_one(function.Playlist, ctx.author.id, {"tracks": new_tracks})
+        await ctx.reply(f"**[{track.title}](<{track.uri}>)** is added to **❤️**", ephemeral=True)
 
         
     @playlist.command(name="remove", with_app_command = True, description = "Remove a song to your playlist")
     @app_commands.describe(name="Link of the song.")
-    async def remove(self, ctx: commands.Context, name):
+    async def remove(self, ctx: commands.Context, name: str):
         rank, maxTrack = await function.get_user_rank(ctx.author.id)
-        if rank == None:
+        if rank is None:
             await function.create_account(ctx)
 
-        track = await pomice.NodePool.get_node().get_tracks(query=name, ctx=ctx)
+        track_results = await pomice.NodePool.get_node().get_tracks(query=name, ctx=ctx)
         
-        playlist = function.db.find_one("playlist", ctx.author.id, "tracks")
+        if not track_results:
+            await ctx.reply("Track was not found", ephemeral=True)
+            return
 
-        if track[0].uri in playlist:
-            try:
-                playlist = playlist.replace(track[0].uri+',', "")
-                function.db.update_one("playlist", "tracks", playlist, ctx.author.id)
-                await ctx.reply(f"**[{track[0].title}](<{track[0].uri}>)** is removed from **❤️**", ephemeral=True)
-            except Exception as e:
-                print("Error on remove song from playlist:", e)
-                await ctx.reply("An error occured", ephemeral=True)
-        else:
+        track = track_results[0]
+        playlist = function.db.find_one(function.Playlist, ctx.author.id)
+
+        if playlist is None or track.uri not in playlist.tracks.split(','):
             await ctx.reply("This is not in your playlist.", ephemeral=True)
+            return
+
+        try:
+            new_tracks = playlist.tracks.replace(track.uri + ',', "")
+            function.db.update_one(function.Playlist, ctx.author.id, {"tracks": new_tracks})
+            await ctx.reply(f"**[{track.title}](<{track.uri}>)** is removed from **❤️**", ephemeral=True)
+        except Exception as e:
+            print("Error on remove song from playlist:", e)
+            await ctx.reply("An error occurred", ephemeral=True)
 
 
     @playlist.command(name="play", with_app_command = True, description = "Play your playlist")
     async def play(self, ctx: commands.Context):
         rank, maxTrack = await function.get_user_rank(ctx.author.id)
-        if rank == None:
+        if rank is None:
             await function.create_account(ctx)
 
-        playlist = function.db.find_one("playlist", ctx.author.id, "tracks")
-        playlist = playlist.split(",")
-        playlist.pop()
+        playlist_entry = function.db.find_one(function.Playlist, ctx.author.id)
+        if playlist_entry is None or playlist_entry.tracks == "":
+            return await ctx.reply("Your playlist is empty.", delete_after=7)
+
+        playlist = playlist_entry.tracks.split(",")
+        if playlist[-1] == "":
+            playlist.pop()  # Remove the last empty element due to trailing comma
 
         if not ctx.author.voice:
             return await ctx.reply("You must be in a voice channel.", delete_after=7)
-        elif len(playlist) <= 0:
-            return await ctx.reply("Your playlist is empty.", delete_after=7)
         else:
             if not (player := ctx.voice_client):
                 await ctx.author.voice.channel.connect(cls=Player)
                 player: Player = ctx.voice_client
-                volume = function.db.find_one("settings", ctx.message.guild.id, "volume")
-                if volume == None:
+                setting = function.db.find_one(function.Setting, ctx.message.guild.id)
+                if setting is None:
                     function.db.set_settings(ctx.message.guild.id)
                     volume = 100
+                else:
+                    volume = setting.volume
                 await player.set_volume(volume=volume)
                 await player.set_context(ctx=ctx)
 
         for uri in playlist:
-            track = await player.get_tracks(query=uri, ctx=ctx)
-            player.queue.put(track[0])
-        await ctx.reply("You play the playlist **❤️**")
+            try:
+                track_results = await player.get_tracks(query=uri, ctx=ctx)
+                if not track_results:
+                    await ctx.reply(f"Track for URI {uri} was not found.", ephemeral=True)
+                    continue
+                player.queue.put(track_results[0])
+            except Exception as e:
+                await ctx.reply(f"Error retrieving track for URI {uri}, remove the song by doing **/playlist show**", ephemeral=True)
+                continue
+
+        await ctx.reply("Playing your playlist **❤️**")
 
         if not player.is_playing:
             await player.do_next()
@@ -129,14 +147,19 @@ class Playlist(commands.Cog):
 
     @playlist.command(name="show", with_app_command = True, description = "Show your playlist")
     async def show(self, ctx: commands.Context):
+        await ctx.defer()  # Indicate that the bot is processing the command
 
         rank, maxTrack = await function.get_user_rank(ctx.author.id)
-        if rank == None:
+        if rank is None:
             await function.create_account(ctx)
 
-        playlist = function.db.find_one("playlist", ctx.author.id, "tracks")
-        playlist = playlist.split(",")
-        playlist.pop()
+        playlist_entry = function.db.find_one(function.Playlist, ctx.author.id)
+        if playlist_entry is None or playlist_entry.tracks == "":
+            return await ctx.reply("Your playlist is empty.", delete_after=7)
+
+        playlist = playlist_entry.tracks.split(",")
+        if playlist[-1] == "":
+            playlist.pop()  # Remove the last empty element due to trailing comma
 
         if len(playlist) <= 0:
             return await ctx.reply("Your playlist is empty.", delete_after=7)
@@ -144,10 +167,29 @@ class Playlist(commands.Cog):
         queue_list = []
 
         node = pomice.NodePool.get_node()
+        uris_to_remove = []
 
-        for tracks in playlist:
-            track = await node.get_tracks(query=tracks, ctx=ctx)
-            queue_list.append(track[0])
+        for track_uri in playlist:
+            try:
+                track_results = await node.get_tracks(query=track_uri, ctx=ctx)
+                if not track_results:
+                    uris_to_remove.append(track_uri)
+                    continue
+                queue_list.append(track_results[0])
+            except KeyError as e:
+                uris_to_remove.append(track_uri)
+                continue
+            except Exception as e:
+                uris_to_remove.append(track_uri)
+                continue
+
+        # Remove invalid URIs from the playlist
+        if uris_to_remove:
+            new_tracks = ','.join([uri for uri in playlist if uri not in uris_to_remove])
+            function.db.update_one(function.Playlist, ctx.author.id, {"tracks": new_tracks})
+
+        if not queue_list:
+            return await ctx.reply("All tracks in your playlist are invalid or not available.", ephemeral=True)
 
         pages = []
 
@@ -158,13 +200,12 @@ class Playlist(commands.Cog):
             for index, track in enumerate(page, start=i + 1):
                 time = function.convertMs(track.length)
                 truncated_title = track.title[:25] if len(track.title) > 25 else track.title
-                if track.requester == None:
+                if track.requester is None:
                     track.requester = self.bot.user
-                page_content.append(f"`{index}.` `[{time}]` [{truncated_title}]({track.uri}) {track.requester.mention}")
+                page_content.append(f"`{index}.` `[{time}]` [{truncated_title}]({track.uri})")
 
             pages.append("\n".join(page_content))
 
-        
         menu = PaginationMenu(ctx, pages)
         await menu.show_page()
             

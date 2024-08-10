@@ -98,10 +98,13 @@ class Player(pomice.Player):
 
     async def teardown(self):
         """Clear internal states, remove player controller and disconnect."""
-        with suppress((discord.HTTPException), (KeyError)):
-            actualTime = function.db.find_one("settings", self.context.message.guild.id, "time")
-            timePlayed = actualTime + (round(time.time()) - self.joinTime)
-            function.db.update_one("settings", "time", timePlayed, self.context.message.guild.id)
+        with suppress(discord.HTTPException, KeyError):
+            setting = function.db.find_one(function.Setting, self.context.message.guild.id)
+            
+            if setting:
+                time_played = setting.time + (round(time.time()) - self.joinTime)
+                function.db.update_one(function.Setting, self.context.message.guild.id, {"time": time_played})
+            
             await self.destroy()
             if self.controller:
                 with suppress(discord.HTTPException):

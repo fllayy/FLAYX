@@ -1,9 +1,11 @@
 from dotenv import load_dotenv
 import os
-import mysql.connector
 import time
 import discord
-
+from sqlalchemy import create_engine, Column, BigInteger, String, Integer, Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import text
 
 def convertMs(milliseconds):
     seconds = milliseconds // 1000
@@ -35,160 +37,111 @@ MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
 MYSQL_USER = os.getenv("MYSQL_USERNAME")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
+#--------------- Database Configuration ---------------
+DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DATABASE}"
+engine = create_engine(DATABASE_URL, echo=True)
+Session = sessionmaker(bind=engine)
+session = Session()
+Base = declarative_base()
 
-#--------------- Database ---------------
-class DBClass():
+#--------------- ORM Models ---------------
+class Setting(Base):
+    __tablename__ = 'settings'
+    id = Column(BigInteger, primary_key=True)
+    prefix = Column(String(5))
+    volume = Column(Integer)
+    time = Column(Integer)
 
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(BigInteger, primary_key=True)
+    rankLvl = Column(Integer)
+
+class Playlist(Base):
+    __tablename__ = 'playlist'
+    id = Column(BigInteger, primary_key=True)
+    name = Column(Text)
+    tracks = Column(Text)
+
+#--------------- Database Initialization ---------------
+Base.metadata.create_all(engine)
+
+#--------------- Database Class ---------------
+class DBClass:
+    
     def __init__(self):
-        try:
-            self.db_connection = mysql.connector.connect(
-                host = MYSQL_HOST,
-                user = MYSQL_USER,
-                password = MYSQL_PASSWORD,
-                database = MYSQL_DATABASE
-			)
-            
-            print("Successfully connected to MySQL!")
-
-        except mysql.connector.Error as e:
-            print(f"Error connecting to MySQL: {e}")
-
-
+        self.session = session
+    
     def check(self):
         try:
-            self.db_connection.ping(reconnect=True, attempts=3, delay=5)
-        except mysql.connector.Error as e:
+            self.session.execute(text('SELECT 1'))
+        except Exception as e:
             print("Database ping failed:", e)
-
 
     def ping_mysql(self):
         self.check()
         try:
             start_time = time.time()
-            conn = mysql.connector.connect(
-                host = MYSQL_HOST,
-                user = MYSQL_USER,
-                password = MYSQL_PASSWORD,
-                database = MYSQL_DATABASE
-            )
+            conn = engine.connect()
             end_time = time.time()
-            ping_time = (end_time - start_time) * 10
+            ping_time = (end_time - start_time)
             conn.close()
             return ping_time
         except Exception as e:
             return f"Erreur : {e}"
 
-
-    def create_tables(self):
-        create_table_queries = [
-            """
-            CREATE TABLE IF NOT EXISTS settings (
-                id BIGINT PRIMARY KEY,
-                prefix VARCHAR(5),
-                volume TINYINT,
-                time INT
-            );
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS users (
-                id BIGINT PRIMARY KEY,
-                rankLvl INT
-            );
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS playlist (
-                id BIGINT PRIMARY KEY,
-                name TEXT,
-                tracks LONGTEXT
-            );
-            """
-        ]
-
-        cursor = self.db_connection.cursor()
-        try:
-            for query in create_table_queries:
-                cursor.execute(query)
-            self.db_connection.commit()
-            print('Tables created Successfully!')
-        except Exception as e:
-            print('Error creating tables:', e)
-        finally:
-            cursor.close()
-
-
-    def find_one(self, table_name, id, row):
+    def find_one(self, model, id):
         self.check()
-        cursor = self.db_connection.cursor()
-        select_query = f"SELECT {row} FROM {table_name} WHERE id = %s"
-        cursor.execute(select_query, (id, ))
-        result = cursor.fetchone()
-        cursor.close()
+        result = self.session.query(model).filter_by(id=id).first()
         if result is not None:
-            return result[0]
+            return result
         else:
             return None
-        
 
     def set_settings(self, id):
         self.check()
-        cursor = self.db_connection.cursor()
-        insert_query = "INSERT INTO settings (id, prefix, volume, time) VALUES (%s, %s, %s, %s)"
-        cursor.execute(insert_query, (id, '+', 100, 0))
-        cursor.close()
-        self.db_connection.commit()
+        new_setting = Setting(id=id, prefix='+', volume=100, time=0)
+        self.session.add(new_setting)
+        self.session.commit()
 
-
-    def update_one(self, table_name, row, data, id):
+    def update_one(self, model, id, updates):
         self.check()
-        cursor = self.db_connection.cursor()
-        select_query = f"UPDATE {table_name} SET {row} = %s WHERE id = %s"
-        cursor.execute(select_query, (data, id))
-        cursor.close()
-        self.db_connection.commit()
-
+        self.session.query(model).filter_by(id=id).update(updates)
+        self.session.commit()
 
     def set_user(self, id):
         self.check()
-        cursor = self.db_connection.cursor()
-        insert_query = "INSERT INTO users (id, rankLvl) VALUES (%s, %s)"
-        cursor.execute(insert_query, (id, 0))
-        cursor.close()
-        self.db_connection.commit()
-
+        new_user = User(id=id, rankLvl=0)
+        self.session.add(new_user)
+        self.session.commit()
 
     def create_playlist(self, id, name):
         self.check()
-        cursor = self.db_connection.cursor()
-        insert_query = "INSERT INTO playlist (id, name, tracks) VALUES (%s, %s, %s)"
-        cursor.execute(insert_query, (id, name, ""))
-        cursor.close()
-        self.db_connection.commit()
-                  
+        new_playlist = Playlist(id=id, name=name, tracks="")
+        self.session.add(new_playlist)
+        self.session.commit()
 
 try:
     db = DBClass()
-    db.create_tables()
 except Exception as e:
-    raise Exception("Not able to connect MYSQL! Reason:", e)
-
+    raise Exception("Not able to connect to MySQL! Reason:", e)
 
 #--------------- Functions ---------------
 async def get_user_rank(userId):
-    rank = db.find_one("users", userId, "rankLvl")
-    if rank == 0:
+    user = db.find_one(User, userId)
+    if user.rankLvl == 0:
         rank, maxTrack = "Base", 75
-    elif rank == 0:
+    elif user.rankLvl == 1:
         rank, maxTrack = "Premium", 500
     else:
         rank, maxTrack = None, None
 
     return rank, maxTrack
 
-
 async def create_account(ctx):
     from views.playlist import CreateView
     view = CreateView()
-    embed=discord.Embed(title="Do you want to create an account on FLAYX ?")
+    embed = discord.Embed(title="Do you want to create an account on FLAYX ?")
     embed.description = f"> Plan: Base | 75 tracks in the playlist."
     embed.add_field(name="Terms of Service:", value="‌➥ We assure you that all your data on FLAYX will not be disclosed to any third party\n"
                                                     "➥ We will not perform any data analysis on your data\n"

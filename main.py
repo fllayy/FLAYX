@@ -28,11 +28,11 @@ class FLAYX(commands.Bot):
 
         update.check_version()
 
-        try:
-            synced = await self.tree.sync()
-            print(f"Synced {len(synced)} slash command(s)")
-        except Exception as e:
-            print("Error:", e)
+        # try:
+        #     await self.tree.sync()
+        #     print(f"Synced slash command(s)")
+        # except Exception as e:
+        #     print("Error:", e)
 
 
     async def on_ready(self) -> None:
@@ -46,12 +46,14 @@ class FLAYX(commands.Bot):
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='/help'))
 
 
-async def get_prefix(self, message: Message):
-        prefix = function.db.find_one("settings", message.guild.id, "prefix")
-        if prefix == None:
-            function.db.set_settings(message.guild.id)
-            prefix = "+"
-        return prefix
+async def get_prefix(self, message: discord.Message):
+    setting = function.db.find_one(function.Setting, message.guild.id)
+    if setting is None:
+        function.db.set_settings(message.guild.id)
+        prefix = "+"
+    else:
+        prefix = setting.prefix
+    return prefix
 
 
 intents = discord.Intents.default()

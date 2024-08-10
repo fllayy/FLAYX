@@ -5,7 +5,6 @@ from voicelink.player import Player
 import function
 from views.help import HelpView
 
-
 class Admin(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -38,10 +37,10 @@ class Admin(commands.Cog):
             except Exception:
                 player = None
             if player:
-                function.db.update_one("settings", "volume", volume, ctx.message.guild.id)
+                function.db.update_one(function.Setting, ctx.message.guild.id, {"volume": volume})
                 await player.set_volume(volume)
             else:
-                function.db.update_one("settings", "volume", volume, ctx.message.guild.id)
+                function.db.update_one(function.Setting, ctx.message.guild.id, {"volume": volume})
                 
 
             return await ctx.reply(f"Volume is set to {volume}")
@@ -55,7 +54,7 @@ class Admin(commands.Cog):
 
         if self.is_admin(ctx):
             try:
-                function.db.update_one("settings", "prefix", prefix, ctx.message.guild.id)
+                function.db.update_one(function.Setting, ctx.message.guild.id, {"prefix": prefix})
             except Exception as e:
                  raise f"Erreur : {e}"
                 
@@ -67,13 +66,13 @@ class Admin(commands.Cog):
 
     @settings.command(name="view", with_app_command=True, description="See server settings")
     async def view(self, ctx: commands.Context):
-        server = function.db.find_one("settings", ctx.message.guild.id, "id")
-        if server == None:
+        server = function.db.find_one(function.Setting, ctx.message.guild.id)
+        if server is None:
             function.db.set_settings(ctx.message.guild.id)
 
-        prefix = function.db.find_one("settings", ctx.message.guild.id, "prefix")
-        volume = function.db.find_one("settings", ctx.message.guild.id, "volume")
-        time = function.db.find_one("settings", ctx.message.guild.id, "time")
+        prefix = function.db.find_one(function.Setting, ctx.message.guild.id).prefix
+        volume = function.db.find_one(function.Setting, ctx.message.guild.id).volume
+        time = function.db.find_one(function.Setting, ctx.message.guild.id).time
 
         minutes, seconds = divmod(time, 60)
         hours, minutes = divmod(minutes, 60)

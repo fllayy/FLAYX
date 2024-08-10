@@ -132,20 +132,25 @@ class MusicControlsView(View):
         player = self.player
 
         rank, maxTrack = await function.get_user_rank(interaction.user.id)
-        if rank == None:
+        if rank is None:
             await function.create_account(interaction)
 
-        playlist = function.db.find_one("playlist", interaction.user.id, "tracks")
+        playlist_entry = function.db.find_one(function.Playlist, interaction.user.id)
+        if playlist_entry is None:
+            await function.create_account(interaction)
+            playlist_entry = function.db.find_one(function.Playlist, interaction.user.id)
 
-        if player.current.uri not in playlist:
+        playlist = playlist_entry.tracks
+
+        if player.current.uri not in playlist.split(','):
             if playlist == "":
-                playlist = player.current.uri + ','
-                function.db.update_one("playlist", "tracks", playlist, interaction.user.id)
+                new_tracks = player.current.uri + ','
             else:
                 if len(playlist.split(',')) >= maxTrack:
-                    await interaction.response.send_message("You playlist is full", ephemeral=True)
-                playlist = playlist + player.current.uri + ","
-                function.db.update_one("playlist", "tracks", playlist, interaction.user.id)
+                    return await interaction.response.send_message("Your playlist is full", ephemeral=True)
+                new_tracks = playlist + player.current.uri + ","
+
+            function.db.update_one(function.Playlist, interaction.user.id, {"tracks": new_tracks})
             await interaction.response.send_message(f"**[{player.current.title}](<{player.current.uri}>)** is added to **❤️**", ephemeral=True)
         else:
             await interaction.response.send_message("This is already in your playlist", ephemeral=True)

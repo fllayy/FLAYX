@@ -118,10 +118,12 @@ class Music(commands.Cog):
             if not (player := ctx.voice_client):
                 await ctx.author.voice.channel.connect(cls=Player)
                 player: Player = ctx.voice_client
-                volume = function.db.find_one("settings", ctx.message.guild.id, "volume")
-                if volume == None:
+                setting = function.db.find_one(function.Setting, ctx.message.guild.id)
+                if setting is None:
                     function.db.set_settings(ctx.message.guild.id)
                     volume = 100
+                else:
+                    volume = setting.volume
                 await player.set_volume(volume=volume)
                 await player.set_context(ctx=ctx)
 
@@ -400,10 +402,12 @@ class Music(commands.Cog):
             if not (player := ctx.voice_client):
                 await ctx.author.voice.channel.connect(cls=Player)
                 player: Player = ctx.voice_client
-                volume = function.db.find_one("settings", ctx.message.guild.id, "volume")
-                if volume == None:
+                setting = function.db.find_one(function.Setting, ctx.message.guild.id)
+                if setting is None:
                     function.db.set_settings(ctx.message.guild.id)
                     volume = 100
+                else:
+                    volume = setting.volume
                 await player.set_volume(volume=volume)
                 await player.set_context(ctx=ctx)
 
