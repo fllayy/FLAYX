@@ -6,6 +6,9 @@ from sqlalchemy import create_engine, Column, BigInteger, String, Integer, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
+import logging
+
+logging.getLogger('sqlalchemy.engine.Engine').disabled = True
 
 def convertMs(milliseconds):
     seconds = milliseconds // 1000
