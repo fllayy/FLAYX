@@ -2,23 +2,21 @@ from discord.ui import View, Button
 import discord
 import math
 import function
-
+import wavelink
 
 class MusicControlsView(View):
-    def __init__(self, player):
+    def __init__(self):
         super().__init__(timeout=None)
-        self.player = player
-
     
     @discord.ui.button(label="Skip", emoji="➡️", style=discord.ButtonStyle.grey, custom_id="skip_button")
     async def skip_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Skip the currently playing song."""
-        player = self.player
+        player = interaction.guild.voice_client
 
-        if not player.is_connected:
+        if not player.playing:
             return
 
-        if player.dj == interaction.user or interaction.user.guild_permissions.kick_members:
+        if interaction.user.guild_permissions.kick_members:
             await interaction.response.send_message("Song has been skipped.", delete_after=10)
             player.skip_votes.clear()
 
@@ -40,17 +38,17 @@ class MusicControlsView(View):
 
     @discord.ui.button(label="Pause/Resume", emoji="⏯️", style=discord.ButtonStyle.grey, custom_id="pause_resume_button")
     async def pause_resume_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        player = self.player
-        if player.is_paused:
+        player = interaction.guild.voice_client
 
-            if not player.is_connected:
-                return
-            
-            if player.dj == interaction.user or interaction.user.guild_permissions.kick_members:
+        if not player.playing:
+            return
+
+        if player.paused:
+            if interaction.user.guild_permissions.kick_members:
                 await interaction.response.send_message("The player has been resumed.", delete_after=10)
                 player.resume_votes.clear()
 
-                return await player.set_pause(False)
+                return await player.pause(False)
             
             required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
             player.resume_votes.add(interaction.user)
@@ -58,7 +56,7 @@ class MusicControlsView(View):
             if len(player.resume_votes) >= required:
                 await interaction.response.send_message("Vote to resume passed. Resuming player.", delete_after=10)
                 player.resume_votes.clear()
-                await player.set_pause(False)
+                await player.pause(False)
             else:
                 await interaction.response.send_message(
                     f"{interaction.user.mention} has voted to resume the player. Votes: {len(player.resume_votes)}/{required}",
@@ -66,15 +64,11 @@ class MusicControlsView(View):
                 )
             
         else:
-
-            if not player.is_connected:
-                return
-            
-            if player.dj == interaction.user or interaction.user.guild_permissions.kick_members:
+            if interaction.user.guild_permissions.kick_members:
                 await interaction.response.send_message("The player has been paused", delete_after=10)
                 player.pause_votes.clear()
 
-                return await player.set_pause(True)
+                return await player.pause(True)
             
             required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
             player.pause_votes.add(interaction.user)
@@ -82,7 +76,7 @@ class MusicControlsView(View):
             if len(player.pause_votes) >= required:
                 await interaction.response.send_message("Vote to pause passed. Pausing player.", delete_after=10)
                 player.pause_votes.clear()
-                await player.set_pause(True)
+                await player.pause(True)
             else:
                 await interaction.response.send_message(
                     f"{interaction.user.mention} has voted to pause the player. Votes: {len(player.pause_votes)}/{required}",
@@ -92,20 +86,20 @@ class MusicControlsView(View):
 
     @discord.ui.button(label="Stop", emoji="◾", style=discord.ButtonStyle.red, custom_id="stop_button")
     async def stop_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        player = self.player
-        if not player.is_connected:
+        player = interaction.guild.voice_client
+        if not player.playing:
             return
 
-        if player.dj == interaction.user or interaction.user.guild_permissions.kick_members:
+        if interaction.user.guild_permissions.kick_members:
             await interaction.response.send_message("Player has been stopped.", delete_after=10)
-            return await player.teardown()
+            return await player.disconnect()
 
         required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
         player.stop_votes.add(interaction.user)
 
         if len(player.stop_votes) >= required:
             await interaction.response.send_message("Vote to stop passed. Stopping the player.", delete_after=10)
-            await player.teardown()
+            await player.disconnect()
         else:
             await interaction.response.send_message(
             f"{interaction.user.mention} has voted to stop the player. Votes: {len(player.stop_votes)}/{required}",
@@ -114,22 +108,22 @@ class MusicControlsView(View):
 
     @discord.ui.button(label="Autoplay", emoji="💡", style=discord.ButtonStyle.blurple, custom_id="autoplay_button")
     async def autoplay_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        player = self.player
-        if player.autoplay == False:
-            status = True
-        else:
-            status = False
+        player = interaction.guild.voice_client
 
-        if player.dj == interaction.user or interaction.user.guild_permissions.kick_members:
-            player.autoplay = status
-            await interaction.response.send_message(f"Autoplay is now on {player.autoplay}.")
+        if interaction.user.guild_permissions.kick_members:
+            if player.autoplay == wavelink.AutoPlayMode.disabled:
+                player.autoplay = wavelink.AutoPlayMode.enabled
+                await interaction.response.send_message("Autoplay is now enabled.")
+            else:
+                player.autoplay = wavelink.AutoPlayMode.disabled
+                await interaction.response.send_message("Autoplay is now disabled.")
         else:
             await interaction.response.send_message("You don't have permission to do this.")
 
             
     @discord.ui.button(label="Favorite", emoji="❤️", style=discord.ButtonStyle.blurple, custom_id="favorite_button")
     async def favorite_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        player = self.player
+        player = interaction.guild.voice_client
 
         rank, maxTrack = await function.get_user_rank(interaction.user.id)
         if rank is None:

@@ -1,12 +1,11 @@
 from discord.ext import commands
 import discord
 from discord import app_commands
-from voicelink.player import Player
 import function
 from views.help import HelpView
-import pomice
+import wavelink
 from views.paginator import PaginationMenu
-
+from cogs.music import Player
 
 class Playlist(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -42,20 +41,23 @@ class Playlist(commands.Cog):
 
         playlist = function.db.find_one(function.Playlist, ctx.author.id)
 
-        track_results = await pomice.NodePool.get_node().get_tracks(query=name, ctx=ctx)
+        track_results: wavelink.Search = await wavelink.Playable.search(name)
 
         if not track_results:
-            await ctx.reply("Track was not found", ephemeral=True)
+            return await ctx.reply("Track was not found", ephemeral=True)
 
-        track = track_results[0]
+        if isinstance(track_results, wavelink.Playlist):
+            return await ctx.reply("Can't add playlist to playlist", ephemeral=True)
+
+        track: wavelink.Playable = track_results[0]
         if track.is_stream:
-            await ctx.reply("Can't add stream to playlist", ephemeral=True)
+            return await ctx.reply("Can't add stream to playlist", ephemeral=True)
 
         if track.uri in playlist.tracks.split(','):
-            await ctx.reply("This is already in your playlist", ephemeral=True)
+            return await ctx.reply("This is already in your playlist", ephemeral=True)
 
         if len(playlist.tracks.split(',')) >= maxTrack:
-            await ctx.reply("Your playlist is full", ephemeral=True)
+            return await ctx.reply("Your playlist is full", ephemeral=True)
 
         if playlist.tracks == "":
             new_tracks = track.uri + ','
@@ -73,13 +75,13 @@ class Playlist(commands.Cog):
         if rank is None:
             await function.create_account(ctx)
 
-        track_results = await pomice.NodePool.get_node().get_tracks(query=name, ctx=ctx)
+        track_results: wavelink.Search = await wavelink.Playable.search(name)
         
         if not track_results:
-            await ctx.reply("Track was not found", ephemeral=True)
-            return
+            return await ctx.reply("Track was not found", ephemeral=True)
 
-        track = track_results[0]
+        track: wavelink.Playable = track_results[0]
+
         playlist = function.db.find_one(function.Playlist, ctx.author.id)
 
         if playlist is None or track.uri not in playlist.tracks.split(','):
@@ -107,42 +109,52 @@ class Playlist(commands.Cog):
 
         playlist = playlist_entry.tracks.split(",")
         if playlist[-1] == "":
-            playlist.pop()  # Remove the last empty element due to trailing comma
+            playlist.pop()
 
         if not ctx.author.voice:
             return await ctx.reply("You must be in a voice channel.", delete_after=7)
         else:
-            if not (player := ctx.voice_client):
-                await ctx.author.voice.channel.connect(cls=Player)
-                player: Player = ctx.voice_client
-                setting = function.db.find_one(function.Setting, ctx.message.guild.id)
-                if setting is None:
-                    function.db.set_settings(ctx.message.guild.id)
-                    volume = 100
-                else:
-                    volume = setting.volume
-                await player.set_volume(volume=volume)
-                await player.set_context(ctx=ctx)
+            player: Player = ctx.voice_client
+
+            if not player:
+                try:
+                    player = await ctx.author.voice.channel.connect(cls=Player)  # type: ignore
+                except AttributeError:
+                    await ctx.send("Please join a voice channel first before using this command.")
+                    return
+                except discord.ClientException:
+                    await ctx.send("I was unable to join this voice channel. Please try again.")
+                    return
+
+            player.autoplay = wavelink.AutoPlayMode.disabled
+
+            if not hasattr(player, "home"):
+                player.home = ctx.channel
+            elif player.home != ctx.channel:
+                await ctx.send(f"You can only play songs in {player.home.mention}, as the player has already started there.")
+                return
 
         for uri in playlist:
             try:
-                track_results = await player.get_tracks(query=uri, ctx=ctx)
+                track_results = await wavelink.Playable.search(uri)
                 if not track_results:
                     await ctx.reply(f"Track for URI {uri} was not found.", ephemeral=True)
                     continue
-                player.queue.put(track_results[0])
+                await player.queue.put_wait(track_results[0])
             except Exception as e:
                 await ctx.reply(f"Error retrieving track for URI {uri}, remove the song by doing **/playlist show**", ephemeral=True)
                 continue
 
+        if not player.playing:
+            setting = function.db.find_one(function.Setting, ctx.message.guild.id)
+            if setting is None:
+                function.db.set_settings(ctx.message.guild.id)
+                volume = 100
+            else:
+                volume = setting.volume
+            await player.play(player.queue.get(), volume=volume)
+
         await ctx.reply("Playing your playlist **❤️**")
-
-        if not player.is_playing:
-            await player.do_next()
-
-        if len(player.history) >= 5:
-            player.history.pop(0)
-        player.history.append(player.current)
 
 
     @playlist.command(name="show", with_app_command = True, description = "Show your playlist")
@@ -166,12 +178,11 @@ class Playlist(commands.Cog):
 
         queue_list = []
 
-        node = pomice.NodePool.get_node()
         uris_to_remove = []
 
         for track_uri in playlist:
             try:
-                track_results = await node.get_tracks(query=track_uri, ctx=ctx)
+                track_results = await wavelink.Playable.search(track_uri)
                 if not track_results:
                     uris_to_remove.append(track_uri)
                     continue
@@ -200,8 +211,6 @@ class Playlist(commands.Cog):
             for index, track in enumerate(page, start=i + 1):
                 time = function.convertMs(track.length)
                 truncated_title = track.title[:25] if len(track.title) > 25 else track.title
-                if track.requester is None:
-                    track.requester = self.bot.user
                 page_content.append(f"`{index}.` `[{time}]` [{truncated_title}]({track.uri})")
 
             pages.append("\n".join(page_content))
@@ -209,7 +218,6 @@ class Playlist(commands.Cog):
         menu = PaginationMenu(ctx, pages)
         await menu.show_page()
             
-
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Playlist(bot))

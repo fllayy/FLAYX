@@ -1,9 +1,9 @@
 from discord.ext import commands
 import discord
 from discord import app_commands
-from voicelink.player import Player
 import function
 from views.help import HelpView
+import wavelink
 
 class Admin(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -33,7 +33,7 @@ class Admin(commands.Cog):
         
         if self.is_admin(ctx):
             try:
-                player: Player = ctx.voice_client
+                player: wavelink.Player = ctx.voice_client
             except Exception:
                 player = None
             if player:

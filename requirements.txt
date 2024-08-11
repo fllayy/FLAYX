@@ -1,7 +1,5 @@
-aiohttp==3.9.4
 discord.py==2.4.0
 SQLAlchemy==2.0.32
-orjson==3.9.15
 python-dotenv==1.0.0
-websockets==11.0.3
 requests==2.32.2
+wavelink==3.4.1
