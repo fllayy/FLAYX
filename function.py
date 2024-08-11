@@ -129,13 +129,12 @@ except Exception as e:
 #--------------- Functions ---------------
 async def get_user_rank(userId):
     user = db.find_one(User, userId)
-    if user.rankLvl == 0:
+    if user is None:
+        rank, maxTrack = None, None
+    elif user.rankLvl == 0:
         rank, maxTrack = "Base", 75
     elif user.rankLvl == 1:
         rank, maxTrack = "Premium", 500
-    else:
-        rank, maxTrack = None, None
-
     return rank, maxTrack
 
 async def create_account(ctx):
