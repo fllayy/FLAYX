@@ -1,5 +1,6 @@
 discord.py==2.4.0
 SQLAlchemy==2.0.32
+PyMySQL==1.1.1
 python-dotenv==1.0.0
 requests==2.32.2
 wavelink==3.4.1
