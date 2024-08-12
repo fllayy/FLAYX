@@ -4,7 +4,6 @@ from discord.ext import commands
 import discord
 from discord import app_commands
 import function
-from typing import cast
 import asyncio
 import time
 from views.player import MusicControlsView
@@ -110,41 +109,22 @@ class Music(commands.Cog):
     async def on_wavelink_track_stuck(self, payload: wavelink.TrackStuckEventPayload):
         player = payload.player
         try:
-            await player.context.send(f"Please wait for 10 seconds.", delete_after=10)
+            await player.home.send(f"Please wait for 10 seconds.", delete_after=10)
             await asyncio.sleep(10)
         except Exception as e:
             print("Error: ", e)
-        await player.do_next()
+        await player.stop()
 
 
     @commands.Cog.listener()
     async def on_wavelink_track_exception(self, payload: wavelink.TrackExceptionEventPayload):
         player = payload.player
         try:
-            await player.context.send(f"Please wait for 10 seconds.", delete_after=10)
+            await player.home.send(f"Please wait for 10 seconds.", delete_after=10)
             await asyncio.sleep(10)
         except Exception as e:
             print("Error: ", e)
-        await player.do_next()
-
-
-    @commands.hybrid_command(name='ping', with_app_command=True, description="Test if the bot is alive, and see the delay between your commands and my response.")
-    async def ping(self, ctx: commands.Context):
-        "Test if the bot is alive, and see the delay between your commands and my response."
-        embed = discord.Embed()
-        botPing = self.bot.latency
-        botemoji = '👌' if botPing <= 1 else '😨' if botPing <= 5 else '😭'
-        start_time = time.monotonic()
-        node = wavelink.Pool.get_node()
-        end_time = time.monotonic()
-        nodePing = (end_time - start_time) * 1000
-        nodeemoji = '👌' if nodePing <= 1 else '😨' if nodePing <= 5 else '😭'
-        dbPing = function.db.ping_mysql()
-        dbemoji = '👌' if dbPing <= 1 else '😨' if dbPing <= 5 else '😭'
-        embed.add_field(name='Bot info:', value=f"""
-        Bot: {botPing:.3f}s {botemoji}\nNode: {nodePing:.3f}s {nodeemoji}\nDatabase: {dbPing:.3f}s {dbemoji}
-        """)
-        await ctx.send(embed=embed)
+        await player.stop()
 
 
     @commands.hybrid_command(name='play', with_app_command=True, description="Play a song")
@@ -159,34 +139,32 @@ class Music(commands.Cog):
             try:
                 player = await ctx.author.voice.channel.connect(cls=Player)  # type: ignore
             except AttributeError:
-                await ctx.send("Please join a voice channel first before using this command.")
-                return
+                return await ctx.reply(embed=discord.Embed(description="Please join a voice channel first before using this command.", color=discord.Color.yellow()))
             except discord.ClientException:
-                await ctx.send("I was unable to join this voice channel. Please try again.")
-                return
+                return await ctx.reply(embed=discord.Embed(description="I was unable to join this voice channel. Please try again.", color=discord.Color.red()))
 
         player.autoplay = wavelink.AutoPlayMode.disabled
 
         if not hasattr(player, "home"):
             player.home = ctx.channel
         elif player.home != ctx.channel:
-            await ctx.send(f"You can only play songs in {player.home.mention}, as the player has already started there.")
+            await ctx.send(embed=discord.Embed(description=f"You can only play songs in {player.home.mention}, as the player has already started there.", color=discord.Color.red()))
             return
         try:
             tracks: wavelink.Search = await wavelink.Playable.search(search)
         except Exception as e:
-            return await ctx.reply("⚠️ An error occured", ephemeral=True)
+            return await ctx.reply(embed=discord.Embed(description="⚠️ An error occured", color=discord.Color.red()))
 
         if not tracks:
-            return await ctx.reply("No results were found for that search term", delete_after=7)
+            return await ctx.reply(embed=discord.Embed(description="No results were found for that search term", color=discord.Color.red()))
 
         if isinstance(tracks, wavelink.Playlist):
             added: int = await player.queue.put_wait(tracks)
-            await ctx.reply(f"Added the playlist **{tracks.name}** ({added} videos) to the queue.")
+            await ctx.reply(embed=discord.Embed(description=f"Added the playlist **{tracks.name}** ({added} videos) to the queue.", color=discord.Color.green()))
         else:
             track: wavelink.Playable = tracks[0]
             await player.queue.put_wait(track)
-            await ctx.reply(f"Added **[{track.title}](<{track.uri}>)** [`{function.convertMs(track.length)}`] to queue.")
+            await ctx.reply(embed=discord.Embed(description=f"Added **[{track.title}](<{track.uri}>)** [`{function.convertMs(track.length)}`] to queue.", color=discord.Color.green()))
 
         if not player.playing:
             setting = function.db.find_one(function.Setting, ctx.message.guild.id)
@@ -207,21 +185,21 @@ class Music(commands.Cog):
     async def stop(self, ctx: commands.Context) -> None:
         player: Player = ctx.voice_client
 
-        if not player.connected:
+        if not player:
             return await ctx.reply(
-                "The bot is not in a voice channel.",
+                embed=discord.Embed(description="The bot is not in a voice channel.", color=discord.Color.red()),
                 delete_after=7,
             )
 
         if self.is_privileged(ctx):
-            await ctx.reply("Player has been stopped.", delete_after=10)
+            await ctx.reply(embed=discord.Embed(description="Player has been stopped.", color=discord.Color.green()), delete_after=10)
             return await player.disconnect()
 
         required = self.required(ctx)
         player.stop_votes.add(ctx.author)
 
         if len(player.stop_votes) >= required:
-            await ctx.send("Vote to stop passed. Stopping the player.", delete_after=10)
+            await ctx.send(embed=discord.Embed(description="Vote to stop passed. Stopping the player.", color=discord.Color.green()), delete_after=10)
             await player.disconnect()
         else:
             await ctx.send(
@@ -237,12 +215,12 @@ class Music(commands.Cog):
 
         if not player:
             return await ctx.reply(
-                "The bot is not in a voice channel.",
+                embed=discord.Embed(description="The bot is not in a voice channel.", color=discord.Color.red()),
                 delete_after=7,
             ) 
 
         if self.is_privileged(ctx):
-            await ctx.reply("Song has been skipped.", delete_after=10)
+            await ctx.reply(embed=discord.Embed(description="Song has been skipped.", color=discord.Color.green()), delete_after=10)
             player.skip_votes.clear()
             await player.skip(force=True)
 
@@ -250,7 +228,7 @@ class Music(commands.Cog):
         player.skip_votes.add(ctx.author)
 
         if len(player.skip_votes) >= required:
-            await ctx.send("Vote to skip passed. Skipping song.", delete_after=10)
+            await ctx.send(embed=discord.Embed(description="Vote to skip passed. Skipping song.", color=discord.Color.green()), delete_after=10)
             player.skip_votes.clear()
             await player.skip(force=True)
         else:
@@ -267,7 +245,7 @@ class Music(commands.Cog):
 
         if not player:
             return await ctx.reply(
-                "The bot is not in a voice channel.",
+                embed=discord.Embed(description="The bot is not in a voice channel.", color=discord.Color.red()),
                 delete_after=7,
             )
 
@@ -279,14 +257,14 @@ class Music(commands.Cog):
         
         if self.is_privileged(ctx):
             player.queue.shuffle()
-            await ctx.reply("The queue has been shuffled.")
+            await ctx.reply(embed=discord.Embed(description="The queue has been shuffled.", color=discord.Color.green()))
             return player.queue.shuffle()
 
         required = self.required(ctx)
         player.shuffle_votes.add(ctx.author)
 
         if len(player.shuffle_votes) >= required:
-            await ctx.send("Vote to shuffle passed. Shuffle queue.", delete_after=10)
+            await ctx.send(embed=discord.Embed(description="Vote to shuffle passed. Shuffle queue.", color=discord.Color.green()), delete_after=10)
             player.shuffle_votes.clear()
             await player.queue.shuffle()
         else:
@@ -303,13 +281,13 @@ class Music(commands.Cog):
 
         if not player:
             return await ctx.reply(
-                "The bot is not in a voice channel.",
+                embed=discord.Embed(description="The bot is not in a voice channel.", color=discord.Color.red()),
                 delete_after=7,
             )
         
         if player.queue.count < 1:
             return await ctx.reply(
-                "Queue is empty.",
+                embed=discord.Embed(description="Queue is empty.", color=discord.Color.green()),
                 delete_after=15,
             )
         
@@ -340,7 +318,7 @@ class Music(commands.Cog):
 
         if not player:
             return await ctx.reply(
-                "The bot is not in a voice channel.",
+                embed=discord.Embed(description="The bot is not in a voice channel.", color=discord.Color.red()),
                 delete_after=7,
             )
 
@@ -348,7 +326,7 @@ class Music(commands.Cog):
             return
 
         if self.is_privileged(ctx):
-            await ctx.reply("The player has been paused", delete_after=10)
+            await ctx.reply(embed=discord.Embed(description="The player has been paused", color=discord.Color.green()), delete_after=10)
             player.pause_votes.clear()
 
             return await player.pause(True)
@@ -359,7 +337,7 @@ class Music(commands.Cog):
         if len(player.pause_votes) >= required:
             player.pause_votes.clear()
             await player.pause(True)
-            await ctx.reply("Vote to pause passed. Pausing player.", delete_after=10)
+            await ctx.reply(embed=discord.Embed(description="Vote to pause passed. Pausing player.", color=discord.Color.green()), delete_after=10)
         else:
             await ctx.reply(
                 f"{ctx.author.mention} has voted to pause the player. Votes: {len(player.pause_votes)}/{required}",
@@ -374,7 +352,7 @@ class Music(commands.Cog):
 
         if not player:
             return await ctx.reply(
-                "The bot is not in a voice channel.",
+                embed=discord.Embed(description="The bot is not in a voice channel.", color=discord.Color.red()),
                 delete_after=7,
             )
 
@@ -382,7 +360,7 @@ class Music(commands.Cog):
             return
 
         if self.is_privileged(ctx):
-            await ctx.reply("The player has been resumed.", delete_after=10)
+            await ctx.reply(embed=discord.Embed(description="The player has been resumed.", color=discord.Color.green()), delete_after=10)
             player.resume_votes.clear()
 
             return await player.pause(False)
@@ -393,7 +371,7 @@ class Music(commands.Cog):
         if len(player.resume_votes) >= required:
             player.resume_votes.clear()
             await player.pause(False)
-            await ctx.reply("Vote to resume passed. Resuming player.", delete_after=10)
+            await ctx.reply(embed=discord.Embed(description="Vote to resume passed. Resuming player.", color=discord.Color.green()), delete_after=10)
         else:
             await ctx.reply(
                 f"{ctx.author.mention} has voted to resume the player. Votes: {len(player.resume_votes)}/{required}",
@@ -415,7 +393,7 @@ class Music(commands.Cog):
 
         if not player:
             return await ctx.reply(
-                "The bot is not in a voice channel.",
+                embed=discord.Embed(description="The bot is not in a voice channel.", color=discord.Color.red()),
                 delete_after=7,
             )
 
@@ -428,13 +406,13 @@ class Music(commands.Cog):
 
         if mode not in loop_mode:
             return await ctx.reply(
-                "This loop mode does not exist.",
+                embed=discord.Embed(description="This loop mode does not exist.", color=discord.Color.red()),
                 delete_after=15,
             )
 
         if player.queue.count < 1 and mode == "queue":
             return await ctx.reply(
-                "The queue must have at least 1 tracks to be looped.",
+                embed=discord.Embed(description="The queue must have at least 1 tracks to be looped.", color=discord.Color.red()),
                 delete_after=15,
             )
         
@@ -442,7 +420,7 @@ class Music(commands.Cog):
         if self.is_privileged(ctx):
             player.queue.mode = loop_mode[mode]
             await player.queue.put_wait(player.current)
-            return await ctx.reply(f"loop is on `{mode}`")
+            return await ctx.reply(embed=discord.Embed(description=f"loop is on `{mode}`", color=discord.Color.green()))
         
         required = self.required(ctx)
         player.loop_votes.add(ctx.author)
@@ -451,7 +429,7 @@ class Music(commands.Cog):
             player.loop_votes.clear()
             await player.queue.put_wait(player.current)
             player.queue.mode = loop_mode[mode]
-            return await ctx.send(f"Vote to put loop on `{mode}` passed.", delete_after=10)
+            return await ctx.send(embed=discord.Embed(description=f"Vote to put loop on `{mode}` passed.", color=discord.Color.green()), delete_after=10)
         else:
             await ctx.send(
             f"{ctx.author.mention} has voted to put loop on `{mode}`. Votes: {len(player.loop_votes)}/{required} ",
@@ -466,22 +444,22 @@ class Music(commands.Cog):
 
         if not player:
             return await ctx.reply(
-                "The bot is not in a voice channel.",
+                embed=discord.Embed(description="The bot is not in a voice channel.", color=discord.Color.red()),
                 delete_after=7,
             )
         
         if player.queue.count < index or index < 1:
             return await ctx.reply(
-                "This index is not in the queue.",
+                embed=discord.Embed(description="This index is not in the queue.", color=discord.Color.red()),
                 delete_after=7,
             )
         
         track = player.queue[index - 1]
         if self.is_privileged(ctx):
             player.queue.remove(track)
-            await ctx.reply(f"The track **[{track.title}](<{track.uri}>)** is removed from the queue.")
+            await ctx.reply(embed=discord.Embed(description=f"The track **[{track.title}](<{track.uri}>)** is removed from the queue.", color=discord.Color.green()))
         else:
-            await ctx.reply("You don't have permission to do this.")
+            await ctx.reply(embed=discord.Embed(description="You don't have permission to do this.", color=discord.Color.red()))
 
     
     @commands.hybrid_command(name='clear', with_app_command = True, description = "clear the queue")
@@ -490,22 +468,21 @@ class Music(commands.Cog):
 
         if not player:
             return await ctx.reply(
-                "The bot is not in a voice channel.",
+                embed=discord.Embed(description="The bot is not in a voice channel.", color=discord.Color.red()),
                 delete_after=7,
             )
         
         if player.queue.count < 1:
             return await ctx.reply(
-                "This index is not in the queue.",
+                embed=discord.Embed(description="The queue is empty.", color=discord.Color.red()),
                 delete_after=7,
             )
         
         if self.is_privileged(ctx):
             player.queue.clear()
-            await ctx.reply(f"The queue has been cleaned.")
+            await ctx.reply(embed=discord.Embed(description="The queue has been cleaned.", color=discord.Color.green()))
         else:
-            await ctx.reply("You don't have permission to do this.")
-
+            await ctx.reply(embed=discord.Embed(description="You don't have permission to do this.", color=discord.Color.red()))
 
 
 
@@ -522,7 +499,7 @@ class Music(commands.Cog):
 
         if not player:
             return await ctx.reply(
-                "The bot is not in a voice channel.",
+                embed=discord.Embed(description="The bot is not in a voice channel.", color=discord.Color.red()),
                 delete_after=7,
             )
         
@@ -532,14 +509,14 @@ class Music(commands.Cog):
         }
 
         if status not in autoplay_mode:
-            await ctx.reply(f"This is not a valid mode.")
+            await ctx.reply(embed=discord.Embed(description="This is not a valid mode.", color=discord.Color.red()))
         
         
         if self.is_privileged(ctx):
             player.autoplay = autoplay_mode[status]
-            await ctx.reply(f"Autoplay is now on {status}.")
+            await ctx.reply(embed=discord.Embed(description=f"Autoplay is now on {status}.", color=discord.Color.green()))
         else:
-            await ctx.reply("You don't have permission to do this.")
+            await ctx.reply(embed=discord.Embed(description="You don't have permission to do this.", color=discord.Color.red()))
 
 
 async def setup(bot: commands.Bot) -> None:

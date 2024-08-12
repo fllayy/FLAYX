@@ -29,7 +29,7 @@ class Admin(commands.Cog):
     @app_commands.describe(volume="Volume int.")
     async def volume(self, ctx: commands.Context, volume: int):
         if not 0 < volume < 101:
-            return await ctx.reply("Volume must be between 1 and 100.")
+            return await ctx.reply(embed=discord.Embed(description="Volume must be between **1** and **100**.", color=discord.Color.red()))
         
         if self.is_admin(ctx):
             try:
@@ -43,9 +43,9 @@ class Admin(commands.Cog):
                 function.db.update_one(function.Setting, ctx.message.guild.id, {"volume": volume})
                 
 
-            return await ctx.reply(f"Volume is set to {volume}")
+            return await ctx.reply(embed=discord.Embed(description=f"Volume is set to **{volume}**", color=discord.Color.green()))
         else:
-            return await ctx.reply("You must be an admin or mod")
+            return await ctx.reply(embed=discord.Embed(description="You must be an **admin** or **mod**.", color=discord.Color.red()))
         
 
     @settings.command(name='prefix', with_app_command=True, description="Change the prefix")
@@ -58,10 +58,10 @@ class Admin(commands.Cog):
             except Exception as e:
                  raise f"Erreur : {e}"
                 
-            return await ctx.reply(f"Prefix is set to {prefix}")
+            return await ctx.reply(embed=discord.Embed(description=f"Prefix is set to {prefix}", color=discord.Color.green()))
         
         else:
-            return await ctx.reply("You must be an admin or mod")
+            return await ctx.reply(embed=discord.Embed(description="You must be an **admin** or **mod**.", color=discord.Color.red()))
         
 
     @settings.command(name="view", with_app_command=True, description="See server settings")

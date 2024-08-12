@@ -29,7 +29,7 @@ class Playlist(commands.Cog):
         if rank == None:
             await function.create_account(ctx)
         else:
-            return await ctx.reply(f"Your rank is `{rank}` ({maxTrack} tracks per playlist)")
+            return await ctx.reply(embed=discord.Embed(description=f"Your rank is `{rank}` ({maxTrack} tracks per playlist)", color=discord.Color.green()))
 
 
     @playlist.command(name="add", with_app_command = True, description = "Add a song to your playlist")
@@ -44,20 +44,20 @@ class Playlist(commands.Cog):
         track_results: wavelink.Search = await wavelink.Playable.search(name)
 
         if not track_results:
-            return await ctx.reply("Track was not found", ephemeral=True)
+            return await ctx.reply(embed=discord.Embed(description="Track was not found", color=discord.Color.red()), ephemeral=True)
 
         if isinstance(track_results, wavelink.Playlist):
-            return await ctx.reply("Can't add playlist to playlist", ephemeral=True)
+            return await ctx.reply(embed=discord.Embed(description="Can't add playlist to playlist", color=discord.Color.red()), ephemeral=True)
 
         track: wavelink.Playable = track_results[0]
         if track.is_stream:
-            return await ctx.reply("Can't add stream to playlist", ephemeral=True)
+            return await ctx.reply(embed=discord.Embed(description="Can't add stream to playlist", color=discord.Color.red()), ephemeral=True)
 
         if track.uri in playlist.tracks.split(','):
-            return await ctx.reply("This is already in your playlist", ephemeral=True)
+            return await ctx.reply(embed=discord.Embed(description="This is already in your playlist", color=discord.Color.red()), ephemeral=True)
 
         if len(playlist.tracks.split(',')) >= maxTrack:
-            return await ctx.reply("Your playlist is full", ephemeral=True)
+            return await ctx.reply(embed=discord.Embed(description="Your playlist is full", color=discord.Color.red()), ephemeral=True)
 
         if playlist.tracks == "":
             new_tracks = track.uri + ','
@@ -65,7 +65,7 @@ class Playlist(commands.Cog):
             new_tracks = playlist.tracks + track.uri + ','
 
         function.db.update_one(function.Playlist, ctx.author.id, {"tracks": new_tracks})
-        await ctx.reply(f"**[{track.title}](<{track.uri}>)** is added to **❤️**", ephemeral=True)
+        await ctx.reply(embed=discord.Embed(description=f"**[{track.title}](<{track.uri}>)** is added to **❤️**", color=discord.Color.green()), ephemeral=True)
 
         
     @playlist.command(name="remove", with_app_command = True, description = "Remove a song to your playlist")
@@ -78,23 +78,22 @@ class Playlist(commands.Cog):
         track_results: wavelink.Search = await wavelink.Playable.search(name)
         
         if not track_results:
-            return await ctx.reply("Track was not found", ephemeral=True)
+            return await ctx.reply(embed=discord.Embed(description="Track was not found", color=discord.Color.red()), ephemeral=True)
 
         track: wavelink.Playable = track_results[0]
 
         playlist = function.db.find_one(function.Playlist, ctx.author.id)
 
         if playlist is None or track.uri not in playlist.tracks.split(','):
-            await ctx.reply("This is not in your playlist.", ephemeral=True)
+            await ctx.reply(embed=discord.Embed(description="This is not in your playlist.", color=discord.Color.red()), ephemeral=True)
             return
 
         try:
             new_tracks = playlist.tracks.replace(track.uri + ',', "")
             function.db.update_one(function.Playlist, ctx.author.id, {"tracks": new_tracks})
-            await ctx.reply(f"**[{track.title}](<{track.uri}>)** is removed from **❤️**", ephemeral=True)
+            await ctx.reply(embed=discord.Embed(description=f"**[{track.title}](<{track.uri}>)** is removed from **❤️**", color=discord.Color.green()), ephemeral=True)
         except Exception as e:
-            print("Error on remove song from playlist:", e)
-            await ctx.reply("An error occurred", ephemeral=True)
+            await ctx.reply(embed=discord.Embed(description="An error occurred", color=discord.Color.red()), ephemeral=True)
 
 
     @playlist.command(name="play", with_app_command = True, description = "Play your playlist")
@@ -105,14 +104,14 @@ class Playlist(commands.Cog):
 
         playlist_entry = function.db.find_one(function.Playlist, ctx.author.id)
         if playlist_entry is None or playlist_entry.tracks == "":
-            return await ctx.reply("Your playlist is empty.", delete_after=7)
+            return await ctx.reply(embed=discord.Embed(description="Your playlist is empty.", color=discord.Color.red()), delete_after=7)
 
         playlist = playlist_entry.tracks.split(",")
         if playlist[-1] == "":
             playlist.pop()
 
         if not ctx.author.voice:
-            return await ctx.reply("You must be in a voice channel.", delete_after=7)
+            return await ctx.reply(embed=discord.Embed(description="You must be in a voice channel.", color=discord.Color.red()), delete_after=7)
         else:
             player: Player = ctx.voice_client
 
@@ -120,10 +119,10 @@ class Playlist(commands.Cog):
                 try:
                     player = await ctx.author.voice.channel.connect(cls=Player)  # type: ignore
                 except AttributeError:
-                    await ctx.send("Please join a voice channel first before using this command.")
+                    await ctx.send(embed=discord.Embed(description="Please join a voice channel first before using this command.", color=discord.Color.red()))
                     return
                 except discord.ClientException:
-                    await ctx.send("I was unable to join this voice channel. Please try again.")
+                    await ctx.send(embed=discord.Embed(description="I was unable to join this voice channel. Please try again.", color=discord.Color.red()))
                     return
 
             player.autoplay = wavelink.AutoPlayMode.disabled
@@ -131,18 +130,18 @@ class Playlist(commands.Cog):
             if not hasattr(player, "home"):
                 player.home = ctx.channel
             elif player.home != ctx.channel:
-                await ctx.send(f"You can only play songs in {player.home.mention}, as the player has already started there.")
+                await ctx.send(embed=discord.Embed(description=f"You can only play songs in {player.home.mention}, as the player has already started there.", color=discord.Color.red()))
                 return
 
         for uri in playlist:
             try:
                 track_results = await wavelink.Playable.search(uri)
                 if not track_results:
-                    await ctx.reply(f"Track for URI {uri} was not found.", ephemeral=True)
+                    await ctx.reply(embed=discord.Embed(description=f"Track for URI {uri} was not found.", color=discord.Color.red()), ephemeral=True)
                     continue
                 await player.queue.put_wait(track_results[0])
             except Exception as e:
-                await ctx.reply(f"Error retrieving track for URI {uri}, remove the song by doing **/playlist show**", ephemeral=True)
+                await ctx.reply(embed=discord.Embed(description=f"Error retrieving track for URI {uri}, remove the song by doing **/playlist show**", color=discord.Color.red()), ephemeral=True)
                 continue
 
         if not player.playing:
@@ -154,7 +153,7 @@ class Playlist(commands.Cog):
                 volume = setting.volume
             await player.play(player.queue.get(), volume=volume)
 
-        await ctx.reply("Playing your playlist **❤️**")
+        await ctx.reply(embed=discord.Embed(description="Playing your playlist **❤️**", color=discord.Color.green()))
 
 
     @playlist.command(name="show", with_app_command = True, description = "Show your playlist")
@@ -167,14 +166,14 @@ class Playlist(commands.Cog):
 
         playlist_entry = function.db.find_one(function.Playlist, ctx.author.id)
         if playlist_entry is None or playlist_entry.tracks == "":
-            return await ctx.reply("Your playlist is empty.", delete_after=7)
+            return await ctx.reply(embed=discord.Embed(description="Your playlist is empty.", color=discord.Color.red()), delete_after=7)
 
         playlist = playlist_entry.tracks.split(",")
         if playlist[-1] == "":
             playlist.pop()  # Remove the last empty element due to trailing comma
 
         if len(playlist) <= 0:
-            return await ctx.reply("Your playlist is empty.", delete_after=7)
+            return await ctx.reply(embed=discord.Embed(description="Your playlist is empty.", color=discord.Color.red()), delete_after=7)
 
         queue_list = []
 
@@ -200,7 +199,7 @@ class Playlist(commands.Cog):
             function.db.update_one(function.Playlist, ctx.author.id, {"tracks": new_tracks})
 
         if not queue_list:
-            return await ctx.reply("All tracks in your playlist are invalid or not available.", ephemeral=True)
+            return await ctx.reply(embed=discord.Embed(description="All tracks in your playlist are invalid or not available.", color=discord.Color.red()), ephemeral=True)
 
         pages = []
 
