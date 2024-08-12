@@ -176,6 +176,13 @@ class MusicControlsView(View):
             else:
                 player.autoplay = wavelink.AutoPlayMode.disabled
                 await interaction.response.send_message(embed=discord.Embed(description=f"Autoplay is now disabled.", color=discord.Color.green()))
+        elif function.db.find_one(function.Setting, interaction.message.guild.id).dj in [role.id for role in interaction.user.roles]:
+            if player.autoplay == wavelink.AutoPlayMode.disabled:
+                player.autoplay = wavelink.AutoPlayMode.enabled
+                await interaction.response.send_message(embed=discord.Embed(description=f"Autoplay is now enabled.", color=discord.Color.green()))
+            else:
+                player.autoplay = wavelink.AutoPlayMode.disabled
+                await interaction.response.send_message(embed=discord.Embed(description=f"Autoplay is now disabled.", color=discord.Color.green()))
         else:
             await interaction.response.send_message(embed=discord.Embed(description="You don't have permission to do this.", color=discord.Color.red()))
 
