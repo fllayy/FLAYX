@@ -21,6 +21,7 @@ class Player(wavelink.Player):
         self.stop_votes = set()
         self.loop_votes = set()
         self.inactive_timeout = 300
+        self.now_playing_message = None
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -94,7 +95,7 @@ class Music(commands.Cog):
         text=f"Queue Length: {len(player.queue)} | Duration: {function.convertMs(track.length)} | Volume: {player.volume}% | Autoplay: {player.autoplay.name}",
         )
 
-        await player.home.send(embed=embed, view=MusicControlsView())
+        player.now_playing_message = await player.home.send(embed=embed, view=MusicControlsView())
 
     
     @commands.Cog.listener()
@@ -102,6 +103,13 @@ class Music(commands.Cog):
         player: Player | None = payload.player
         if not player:
             return
+        
+        if player.now_playing_message:
+            try:
+                await player.now_playing_message.delete()
+            except discord.HTTPException:
+                pass
+            player.now_playing_message = None
         
         if not player.queue.is_empty:
             await player.play(player.queue.get())
@@ -143,14 +151,28 @@ class Music(commands.Cog):
             print("Error: ", e)
         await player.stop()
 
+    
+    async def source_autocomplete(self, interaction: discord.Interaction, current: str) -> list:
+        souces = ['Youtube', 'YoutubeMusic', 'SoundCloud']
+        return [app_commands.Choice(name=souce, value=souce) for souce in souces]
 
     @commands.hybrid_command(name='play', with_app_command=True, description="Play a song")
+    @app_commands.autocomplete(source=source_autocomplete)
     @app_commands.describe(search="Input a query or a searchable link.")
-    async def play(self, ctx: commands.Context, *, search: str) -> None:
+    async def play(self, ctx: commands.Context, *, search: str, source = "Youtube") -> None:
         if not ctx.guild:
             return
         
         player: Player = ctx.voice_client  # type: ignore
+
+        sources = {
+            "Youtube": wavelink.TrackSource.YouTube,
+            "YoutubeMusic": wavelink.TrackSource.YouTubeMusic,
+            "SoundCloud": wavelink.TrackSource.SoundCloud
+        }
+
+        if source not in sources:
+            await ctx.reply(embed=discord.Embed(description="This is not a valid mode.", color=discord.Color.red()))
 
         if not player:
             try:
@@ -168,7 +190,7 @@ class Music(commands.Cog):
             await ctx.send(embed=discord.Embed(description=f"You can only play songs in {player.home.mention}, as the player has already started there.", color=discord.Color.red()))
             return
         try:
-            tracks: wavelink.Search = await wavelink.Playable.search(search)
+            tracks: wavelink.Search = await wavelink.Playable.search(search, source=sources[source])
         except Exception as e:
             return await ctx.reply(embed=discord.Embed(description="⚠️ An error occured", color=discord.Color.red()))
 
@@ -219,6 +241,12 @@ class Music(commands.Cog):
                 previousTime = setting.time
             newTime = previousTime + playerUptime
             function.db.update_one(function.Setting, ctx.message.guild.id, {"time": newTime})
+            if player.now_playing_message:
+                try:
+                    await player.now_playing_message.delete()
+                except discord.HTTPException:
+                    pass
+                player.now_playing_message = None
             return await player.disconnect()
 
         required = self.required(ctx)
@@ -235,6 +263,12 @@ class Music(commands.Cog):
                 previousTime = setting.time
             newTime = previousTime + playerUptime
             function.db.update_one(function.Setting, ctx.message.guild.id, {"time": newTime})
+            if player.now_playing_message:
+                try:
+                    await player.now_playing_message.delete()
+                except discord.HTTPException:
+                    pass
+                player.now_playing_message = None
             await player.disconnect()
         else:
             await ctx.send(

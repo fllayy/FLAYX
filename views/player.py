@@ -111,7 +111,14 @@ class MusicControlsView(View):
                 previousTime = setting.time
             newTime = previousTime + playerUptime
             function.db.update_one(function.Setting, player.guild.id, {"time": newTime})
+            if player.now_playing_message:
+                try:
+                    await player.now_playing_message.delete()
+                except discord.HTTPException:
+                    pass
+                player.now_playing_message = None
             return await player.disconnect()
+        
         elif function.db.find_one(function.Setting, interaction.message.guild.id).dj in [role.id for role in interaction.user.roles]:
             await interaction.response.send_message(embed=discord.Embed(description="Player has been stopped.", color=discord.Color.green()), delete_after=10)
             playerUptime = time.time() - player.start_time
@@ -123,6 +130,12 @@ class MusicControlsView(View):
                 previousTime = setting.time
             newTime = previousTime + playerUptime
             function.db.update_one(function.Setting, player.guild.id, {"time": newTime})
+            if player.now_playing_message:
+                try:
+                    await player.now_playing_message.delete()
+                except discord.HTTPException:
+                    pass
+                player.now_playing_message = None
             return await player.disconnect()
 
         required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
@@ -139,6 +152,12 @@ class MusicControlsView(View):
                 previousTime = setting.time
             newTime = previousTime + playerUptime
             function.db.update_one(function.Setting, player.guild.id, {"time": newTime})
+            if player.now_playing_message:
+                try:
+                    await player.now_playing_message.delete()
+                except discord.HTTPException:
+                    pass
+                player.now_playing_message = None
             await player.disconnect()
         else:
             await interaction.response.send_message(
