@@ -13,6 +13,7 @@ from views.paginator import PaginationMenu
 class Player(wavelink.Player):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.start_time = time.time()
         self.pause_votes = set()
         self.resume_votes = set()
         self.skip_votes = set()
@@ -100,8 +101,19 @@ class Music(commands.Cog):
         if not player.queue.is_empty:
             await player.play(player.queue.get())
 
+
     @commands.Cog.listener()
     async def on_wavelink_inactive_player(self, player: wavelink.Player) -> None:
+        player: Player = player
+        playerUptime = time.time() - player.start_time
+        setting = function.db.find_one(function.Setting, player.guild.id)
+        if setting is None:
+            function.db.set_settings(player.guild.id)
+            previousTime = 0
+        else:
+            previousTime = setting.time
+        newTime = previousTime + playerUptime
+        function.db.update_one(function.Setting, player.guild.id, {"time": newTime})
         await player.disconnect()
 
 
@@ -193,6 +205,15 @@ class Music(commands.Cog):
 
         if self.is_privileged(ctx):
             await ctx.reply(embed=discord.Embed(description="Player has been stopped.", color=discord.Color.green()), delete_after=10)
+            playerUptime = time.time() - player.start_time
+            setting = function.db.find_one(function.Setting, ctx.message.guild.id)
+            if setting is None:
+                function.db.set_settings(ctx.message.guild.id)
+                previousTime = 0
+            else:
+                previousTime = setting.time
+            newTime = previousTime + playerUptime
+            function.db.update_one(function.Setting, ctx.message.guild.id, {"time": newTime})
             return await player.disconnect()
 
         required = self.required(ctx)
@@ -200,6 +221,15 @@ class Music(commands.Cog):
 
         if len(player.stop_votes) >= required:
             await ctx.send(embed=discord.Embed(description="Vote to stop passed. Stopping the player.", color=discord.Color.green()), delete_after=10)
+            playerUptime = time.time() - player.start_time
+            setting = function.db.find_one(function.Setting, ctx.message.guild.id)
+            if setting is None:
+                function.db.set_settings(ctx.message.guild.id)
+                previousTime = 0
+            else:
+                previousTime = setting.time
+            newTime = previousTime + playerUptime
+            function.db.update_one(function.Setting, ctx.message.guild.id, {"time": newTime})
             await player.disconnect()
         else:
             await ctx.send(

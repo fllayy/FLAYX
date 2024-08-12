@@ -3,6 +3,7 @@ import discord
 import math
 import function
 import wavelink
+import time
 
 class MusicControlsView(View):
     def __init__(self):
@@ -92,6 +93,15 @@ class MusicControlsView(View):
 
         if interaction.user.guild_permissions.kick_members:
             await interaction.response.send_message("Player has been stopped.", delete_after=10)
+            playerUptime = time.time() - player.start_time
+            setting = function.db.find_one(function.Setting, player.guild.id)
+            if setting is None:
+                function.db.set_settings(player.guild.id)
+                previousTime = 0
+            else:
+                previousTime = setting.time
+            newTime = previousTime + playerUptime
+            function.db.update_one(function.Setting, player.guild.id, {"time": newTime})
             return await player.disconnect()
 
         required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
@@ -99,6 +109,15 @@ class MusicControlsView(View):
 
         if len(player.stop_votes) >= required:
             await interaction.response.send_message("Vote to stop passed. Stopping the player.", delete_after=10)
+            playerUptime = time.time() - player.start_time
+            setting = function.db.find_one(function.Setting, player.guild.id)
+            if setting is None:
+                function.db.set_settings(player.guild.id)
+                previousTime = 0
+            else:
+                previousTime = setting.time
+            newTime = previousTime + playerUptime
+            function.db.update_one(function.Setting, player.guild.id, {"time": newTime})
             await player.disconnect()
         else:
             await interaction.response.send_message(

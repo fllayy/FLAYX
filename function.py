@@ -126,6 +126,7 @@ class DBClass:
 
 try:
     db = DBClass()
+    print("Succesfully connected to MySQL\n")
 except Exception as e:
     raise Exception("Not able to connect to MySQL! Reason:", e)
 

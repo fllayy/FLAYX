@@ -38,7 +38,7 @@ class FLAYX(commands.Bot):
 
 
     async def on_ready(self) -> None:
-        print("--- Bot info: ---")
+        print("\n--- Bot info: ---")
         print(f"Logging As {self.user} ({self.user.id})")
         print(f"{self.user} is in {len(bot.guilds)} server")
         print(f"discord.py version: {discord.__version__}")
@@ -72,4 +72,4 @@ if __name__ == "__main__":
     print("|   __|  |__|     |_   _|-   -|")
     print("|__|  |_____|__|__| |_| |__|__|\n")
     update.check_version(with_msg=True)
-    bot.run(function.TOKEN, log_handler=None) #, log_handler=None
+    bot.run(function.TOKEN) #, log_handler=None
