@@ -72,4 +72,4 @@ if __name__ == "__main__":
     print("|   __|  |__|     |_   _|-   -|")
     print("|__|  |_____|__|__| |_| |__|__|\n")
     update.check_version(with_msg=True)
-    bot.run(function.TOKEN) #, log_handler=None
+    bot.run(function.TOKEN, log_handler=None) #, log_handler=None
