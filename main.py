@@ -18,31 +18,32 @@ class FLAYX(commands.Bot):
 
 
     async def setup_hook(self):
+        print("--- Loading of cogs: ---")
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
                 try:
                     await self.load_extension(f"cogs.{filename[:-3]}")
-                    print(f"Loaded {filename[:-3]}")
+                    print(f"{filename[:-3]} loaded")
                 except Exception as e:
                     print(traceback.format_exc())
 
         update.check_version()
 
         # try:
+        #     print("--- Sync of slash commands: ---")
         #     await self.tree.sync()
-        #     print(f"Synced slash command(s)")
+        #     print(f"Slash commands synced\n")
         # except Exception as e:
-        #     print("Error:", e)
+        #     print("Error:", e, "\n")
 
 
     async def on_ready(self) -> None:
-        print("------------------")
-        print(f"Logging As {self.user}")
-        print(f"Bot ID: {self.user.id}")
-        print("------------------")
-        print(f"Discord Version: {discord.__version__}")
+        print("--- Bot info: ---")
+        print(f"Logging As {self.user} ({self.user.id})")
+        print(f"{self.user} is in {len(bot.guilds)} server")
+        print(f"discord.py version: {discord.__version__}")
         print(f"Python Version: {sys.version}")
-        print("------------------")
+        print("--------------\n")
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='/help'))
 
 
@@ -66,5 +67,9 @@ bot = FLAYX(command_prefix=get_prefix,
             activity=discord.Activity(type=discord.ActivityType.listening, name='Starting...')
             )
 if __name__ == "__main__":
+    print(" _____ __    _____ __ __ __ __ ")
+    print("|   __|  |  |  _  |  |  |  |  |")
+    print("|   __|  |__|     |_   _|-   -|")
+    print("|__|  |_____|__|__| |_| |__|__|\n")
     update.check_version(with_msg=True)
-    bot.run(function.TOKEN) #, log_handler=None
+    bot.run(function.TOKEN, log_handler=None) #, log_handler=None

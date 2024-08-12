@@ -26,8 +26,8 @@ def check_version(with_msg=False):
     response = requests.get(GITHUB_API_URL)
     latest_version = response.json().get("name", __version__)
     if with_msg:
-        msg = f"{bcolors.OKGREEN}Your bot is up-to-date! - {latest_version}{bcolors.ENDC}" if latest_version == __version__ else \
-              f"{bcolors.WARNING}Your bot is not up-to-date! The latest version is {latest_version} and you are currently running version {__version__}\n. Run `python update.py -l` to update your bot!{bcolors.ENDC}"
+        msg = f"{bcolors.OKGREEN}Your bot is up-to-date! - {latest_version}{bcolors.ENDC}\n" if latest_version == __version__ else \
+              f"{bcolors.WARNING}Your bot is not up-to-date! The latest version is {latest_version} and you are currently running version {__version__}\n. Run `python update.py -l` to update your bot!{bcolors.ENDC}\n"
         print(msg)
     return latest_version
 
