@@ -29,12 +29,12 @@ class FLAYX(commands.Bot):
 
         update.check_version()
 
-        # try:
-        #     print("--- Sync of slash commands: ---")
-        #     await self.tree.sync()
-        #     print(f"Slash commands synced\n")
-        # except Exception as e:
-        #     print("Error:", e, "\n")
+        try:
+            print("--- Sync of slash commands: ---")
+            await self.tree.sync()
+            print(f"Slash commands synced\n")
+        except Exception as e:
+            print("Error:", e, "\n")
 
 
     async def on_ready(self) -> None:
