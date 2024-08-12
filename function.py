@@ -54,6 +54,7 @@ class Setting(Base):
     prefix = Column(String(5))
     volume = Column(Integer)
     time = Column(Integer)
+    dj = Column(BigInteger, nullable=True)
 
 class User(Base):
     __tablename__ = 'users'
@@ -103,7 +104,7 @@ class DBClass:
 
     def set_settings(self, id):
         self.check()
-        new_setting = Setting(id=id, prefix='+', volume=100, time=0)
+        new_setting = Setting(id=id, prefix='+', volume=100, time=0, dj=None)
         self.session.add(new_setting)
         self.session.commit()
 

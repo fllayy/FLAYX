@@ -49,7 +49,12 @@ class Music(commands.Cog):
     def is_privileged(self, ctx: commands.Context):
         """Check whether the user is an Admin or DJ."""
         player: Player = ctx.voice_client
-        return ctx.author.guild_permissions.kick_members
+        if ctx.author.guild_permissions.kick_members:
+            return True
+        elif function.db.find_one(function.Setting, ctx.message.guild.id).dj in [role.id for role in ctx.author.roles]:
+            return True
+        else:
+            return False
     
 
     @commands.Cog.listener()
@@ -544,7 +549,7 @@ class Music(commands.Cog):
         
         if self.is_privileged(ctx):
             player.autoplay = autoplay_mode[status]
-            await ctx.reply(embed=discord.Embed(description=f"Autoplay is now on {status}.", color=discord.Color.green()))
+            await ctx.reply(embed=discord.Embed(description=f"Autoplay is now {status}.", color=discord.Color.green()))
         else:
             await ctx.reply(embed=discord.Embed(description="You don't have permission to do this.", color=discord.Color.red()))
 

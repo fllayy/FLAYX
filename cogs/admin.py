@@ -64,6 +64,38 @@ class Admin(commands.Cog):
             return await ctx.reply(embed=discord.Embed(description="You must be an **admin** or **mod**.", color=discord.Color.red()))
         
 
+    async def dj_autocomplete(self, interaction: discord.Interaction, current: str) -> list:
+        roles = interaction.guild.roles
+        return [
+            app_commands.Choice(name=role.name, value=str(role.id))
+            for role in roles if current.lower() in role.name.lower()
+        ][:25] 
+        
+    @settings.command(name='dj', with_app_command=True, description="Change/remove the dj role")
+    @app_commands.describe(role="DJ role.")
+    @app_commands.autocomplete(role=dj_autocomplete)
+    async def dj(self, ctx: commands.Context, enable: bool, role: str = None):
+
+        if self.is_admin(ctx):
+            try:
+                if enable:
+                    if not role:
+                        return await ctx.reply(embed=discord.Embed(description="You need to select a role.", color=discord.Color.red()))
+                    function.db.update_one(function.Setting, ctx.message.guild.id, {"dj": int(role)})
+                else:
+                    function.db.update_one(function.Setting, ctx.message.guild.id, {"dj": None})
+                    return await ctx.reply(embed=discord.Embed(description="DJ role has been disabled.", color=discord.Color.green()))
+            except Exception as e:
+                 raise f"Erreur : {e}"
+                
+            return await ctx.reply(embed=discord.Embed(description=f"DJ role is now **{ctx.guild.get_role(int(role))}**", color=discord.Color.green()))
+        
+        else:
+            return await ctx.reply(embed=discord.Embed(description="You must be an **admin** or **mod**.", color=discord.Color.red()))
+        
+    
+        
+
     @settings.command(name="view", with_app_command=True, description="See server settings")
     async def view(self, ctx: commands.Context):
         server = function.db.find_one(function.Setting, ctx.message.guild.id)
@@ -73,6 +105,7 @@ class Admin(commands.Cog):
         prefix = function.db.find_one(function.Setting, ctx.message.guild.id).prefix
         volume = function.db.find_one(function.Setting, ctx.message.guild.id).volume
         time = function.db.find_one(function.Setting, ctx.message.guild.id).time
+        dj = function.db.find_one(function.Setting, ctx.message.guild.id).dj
 
         minutes, seconds = divmod(time, 60)
         hours, minutes = divmod(minutes, 60)
@@ -91,6 +124,7 @@ class Admin(commands.Cog):
         embed = discord.Embed(
             description=f"**Prefix: `{prefix}`**\n"
             f"**Volume: `{volume}%`**\n"
+            f"**DJ: `{ctx.guild.get_role(dj)}%`**\n"
             f"**Time played: `{time_format.strip()}`**\n"
         )
         embed.set_author(name=ctx.guild.name, icon_url=self.bot.user.avatar.url)

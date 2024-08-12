@@ -18,16 +18,19 @@ class MusicControlsView(View):
             return
 
         if interaction.user.guild_permissions.kick_members:
-            await interaction.response.send_message("Song has been skipped.", delete_after=10)
+            await interaction.response.send_message(embed=discord.Embed(description="Song has been skipped.", color=discord.Color.green()), delete_after=10)
             player.skip_votes.clear()
-
+            return await player.stop()
+        elif function.db.find_one(function.Setting, interaction.message.guild.id).dj in [role.id for role in interaction.user.roles]:
+            await interaction.response.send_message(embed=discord.Embed(description="Song has been skipped.", color=discord.Color.green()), delete_after=10)
+            player.skip_votes.clear()
             return await player.stop()
 
         required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
         player.skip_votes.add(interaction.user)
 
         if len(player.skip_votes) >= required:
-            await interaction.response.send_message("Vote to skip passed. Skipping song.", delete_after=10)
+            await interaction.response.send_message(embed=discord.Embed(description="Vote to skip passed. Skipping song.", color=discord.Color.green()), delete_after=10)
             player.skip_votes.clear()
             await player.stop()
         else:
@@ -46,9 +49,12 @@ class MusicControlsView(View):
 
         if player.paused:
             if interaction.user.guild_permissions.kick_members:
-                await interaction.response.send_message("The player has been resumed.", delete_after=10)
+                await interaction.response.send_message(embed=discord.Embed(description="The player has been resumed", color=discord.Color.green()), delete_after=10)
                 player.resume_votes.clear()
-
+                return await player.pause(False)
+            elif function.db.find_one(function.Setting, interaction.message.guild.id).dj in [role.id for role in interaction.user.roles]:
+                await interaction.response.send_message(embed=discord.Embed(description="The player has been resumed", color=discord.Color.green()), delete_after=10)
+                player.resume_votes.clear()
                 return await player.pause(False)
             
             required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
@@ -66,10 +72,13 @@ class MusicControlsView(View):
             
         else:
             if interaction.user.guild_permissions.kick_members:
-                await interaction.response.send_message("The player has been paused", delete_after=10)
+                await interaction.response.send_message(embed=discord.Embed(description="The player has been resumed", color=discord.Color.green()), delete_after=10)
                 player.pause_votes.clear()
-
                 return await player.pause(True)
+            elif function.db.find_one(function.Setting, interaction.message.guild.id).dj in [role.id for role in interaction.user.roles]:
+                await interaction.response.send_message(embed=discord.Embed(description="The player has been resumed", color=discord.Color.green()), delete_after=10)
+                player.resume_votes.clear()
+                return await player.pause(False)
             
             required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
             player.pause_votes.add(interaction.user)
@@ -92,7 +101,19 @@ class MusicControlsView(View):
             return
 
         if interaction.user.guild_permissions.kick_members:
-            await interaction.response.send_message("Player has been stopped.", delete_after=10)
+            await interaction.response.send_message(embed=discord.Embed(description="Player has been stopped.", color=discord.Color.green()), delete_after=10)
+            playerUptime = time.time() - player.start_time
+            setting = function.db.find_one(function.Setting, player.guild.id)
+            if setting is None:
+                function.db.set_settings(player.guild.id)
+                previousTime = 0
+            else:
+                previousTime = setting.time
+            newTime = previousTime + playerUptime
+            function.db.update_one(function.Setting, player.guild.id, {"time": newTime})
+            return await player.disconnect()
+        elif function.db.find_one(function.Setting, interaction.message.guild.id).dj in [role.id for role in interaction.user.roles]:
+            await interaction.response.send_message(embed=discord.Embed(description="Player has been stopped.", color=discord.Color.green()), delete_after=10)
             playerUptime = time.time() - player.start_time
             setting = function.db.find_one(function.Setting, player.guild.id)
             if setting is None:
@@ -108,7 +129,7 @@ class MusicControlsView(View):
         player.stop_votes.add(interaction.user)
 
         if len(player.stop_votes) >= required:
-            await interaction.response.send_message("Vote to stop passed. Stopping the player.", delete_after=10)
+            await interaction.response.send_message(embed=discord.Embed(description="Vote to stop passed. Stopping the player.", color=discord.Color.green()), delete_after=10)
             playerUptime = time.time() - player.start_time
             setting = function.db.find_one(function.Setting, player.guild.id)
             if setting is None:
@@ -132,12 +153,12 @@ class MusicControlsView(View):
         if interaction.user.guild_permissions.kick_members:
             if player.autoplay == wavelink.AutoPlayMode.disabled:
                 player.autoplay = wavelink.AutoPlayMode.enabled
-                await interaction.response.send_message("Autoplay is now enabled.")
+                await interaction.response.send_message(embed=discord.Embed(description=f"Autoplay is now enabled.", color=discord.Color.green()))
             else:
                 player.autoplay = wavelink.AutoPlayMode.disabled
-                await interaction.response.send_message("Autoplay is now disabled.")
+                await interaction.response.send_message(embed=discord.Embed(description=f"Autoplay is now disabled.", color=discord.Color.green()))
         else:
-            await interaction.response.send_message("You don't have permission to do this.")
+            await interaction.response.send_message(embed=discord.Embed(description="You don't have permission to do this.", color=discord.Color.red()))
 
             
     @discord.ui.button(label="Favorite", emoji="❤️", style=discord.ButtonStyle.blurple, custom_id="favorite_button")
@@ -160,10 +181,10 @@ class MusicControlsView(View):
                 new_tracks = player.current.uri + ','
             else:
                 if len(playlist.split(',')) >= maxTrack:
-                    return await interaction.response.send_message("Your playlist is full", ephemeral=True)
+                    return await interaction.response.send_message(embed=discord.Embed(description="Your playlist is full", color=discord.Color.red()), ephemeral=True)
                 new_tracks = playlist + player.current.uri + ","
 
             function.db.update_one(function.Playlist, interaction.user.id, {"tracks": new_tracks})
-            await interaction.response.send_message(f"**[{player.current.title}](<{player.current.uri}>)** is added to **❤️**", ephemeral=True)
+            await interaction.response.send_message(embed=discord.Embed(description=f"**[{player.current.title}](<{player.current.uri}>)** is added to **❤️**", color=discord.Color.green()), ephemeral=True)
         else:
-            await interaction.response.send_message("This is already in your playlist", ephemeral=True)
+            await interaction.response.send_message(embed=discord.Embed(description="This is already in your playlist", color=discord.Color.red()), ephemeral=True)
