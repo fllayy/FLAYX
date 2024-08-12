@@ -153,7 +153,7 @@ class Music(commands.Cog):
 
     
     async def source_autocomplete(self, interaction: discord.Interaction, current: str) -> list:
-        souces = ['Youtube', 'YoutubeMusic', 'SoundCloud']
+        souces = ['Youtube', 'YoutubeMusic', 'SoundCloud', 'Spotify', 'Deezer', 'Apple Music']
         return [app_commands.Choice(name=souce, value=souce) for souce in souces]
 
     @commands.hybrid_command(name='play', with_app_command=True, description="Play a song")
@@ -168,7 +168,10 @@ class Music(commands.Cog):
         sources = {
             "Youtube": wavelink.TrackSource.YouTube,
             "YoutubeMusic": wavelink.TrackSource.YouTubeMusic,
-            "SoundCloud": wavelink.TrackSource.SoundCloud
+            "SoundCloud": wavelink.TrackSource.SoundCloud,
+            "Spotify": "spsearch:",
+            "Deezer": "dzsearch:",
+            "Apple Music": "amsearch:"
         }
 
         if source not in sources:
