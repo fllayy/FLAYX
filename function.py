@@ -127,9 +127,9 @@ class DBClass:
 
 try:
     db = DBClass()
-    print("Succesfully connected to MySQL\n")
+    print("\nSuccesfully connected to MySQL\n")
 except Exception as e:
-    raise Exception("Not able to connect to MySQL! Reason:", e)
+    raise Exception("\nNot able to connect to MySQL! Reason:", e, "\n")
 
 #--------------- Functions ---------------
 async def get_user_rank(userId):

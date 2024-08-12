@@ -32,18 +32,18 @@ class FLAYX(commands.Bot):
         try:
             print("--- Sync of slash commands: ---")
             await self.tree.sync()
-            print(f"Slash commands synced\n")
+            print(f"Slash commands synced")
         except Exception as e:
             print("Error:", e, "\n")
 
 
     async def on_ready(self) -> None:
-        print("\n--- Bot info: ---")
+        print("--- Bot info: ---")
         print(f"Logging As {self.user} ({self.user.id})")
         print(f"{self.user} is in {len(bot.guilds)} server")
         print(f"discord.py version: {discord.__version__}")
         print(f"Python Version: {sys.version}")
-        print("--------------\n")
+        print("--------------")
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='/help'))
 
 
