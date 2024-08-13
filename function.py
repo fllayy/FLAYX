@@ -4,7 +4,8 @@ import time
 import discord
 from sqlalchemy import create_engine, Column, BigInteger, String, Integer, Text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.pool import QueuePool
 from sqlalchemy.sql import text
 import logging
 
@@ -39,9 +40,19 @@ MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
 #--------------- Database Configuration ---------------
 DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DATABASE}"
-engine = create_engine(DATABASE_URL, echo=True)
-Session = sessionmaker(bind=engine)
-session = Session()
+
+# Creating the engine with connection pool
+engine = create_engine(
+    DATABASE_URL,
+    poolclass=QueuePool,
+    pool_size=10,
+    max_overflow=20,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    echo=True
+)
+
+Session = scoped_session(sessionmaker(bind=engine))
 Base = declarative_base()
 
 #--------------- ORM Models ---------------
@@ -71,16 +82,10 @@ Base.metadata.create_all(engine)
 class DBClass:
     
     def __init__(self):
-        self.session = session
-    
-    def check(self):
-        try:
-            self.session.execute(text('SELECT 1'))
-        except Exception as e:
-            print("Database ping failed:", e)
+        self.session = Session()
+
 
     def ping_mysql(self):
-        self.check()
         try:
             start_time = time.time()
             conn = engine.connect()
@@ -89,42 +94,60 @@ class DBClass:
             conn.close()
             return ping_time
         except Exception as e:
-            return f"Erreur : {e}"
+            return f"Error: {e}"
+
 
     def find_one(self, model, id):
-        self.check()
-        result = self.session.query(model).filter_by(id=id).first()
-        if result is not None:
+        try:
+            result = self.session.query(model).filter_by(id=id).first()
             return result
-        else:
+        except Exception as e:
+            self.session.rollback()
+            print("Error in find_one:", e)
             return None
 
+
     def set_settings(self, id):
-        self.check()
-        new_setting = Setting(id=id, prefix='+', volume=100, time=0, dj=None)
-        self.session.add(new_setting)
-        self.session.commit()
+        try:
+            new_setting = Setting(id=id, prefix='+', volume=100, time=0, dj=None)
+            self.session.add(new_setting)
+            self.session.commit()
+        except Exception as e:
+            self.session.rollback()
+            print("Error in set_settings:", e)
+
 
     def update_one(self, model, id, updates):
-        self.check()
-        self.session.query(model).filter_by(id=id).update(updates)
-        self.session.commit()
+        try:
+            self.session.query(model).filter_by(id=id).update(updates)
+            self.session.commit()
+        except Exception as e:
+            self.session.rollback()
+            print("Error in update_one:", e)
+
 
     def set_user(self, id):
-        self.check()
-        new_user = User(id=id, rankLvl=0)
-        self.session.add(new_user)
-        self.session.commit()
+        try:
+            new_user = User(id=id, rankLvl=0)
+            self.session.add(new_user)
+            self.session.commit()
+        except Exception as e:
+            self.session.rollback()
+            print("Error in set_user:", e)
+
 
     def create_playlist(self, id, name):
-        self.check()
-        new_playlist = Playlist(id=id, name=name, tracks="")
-        self.session.add(new_playlist)
-        self.session.commit()
+        try:
+            new_playlist = Playlist(id=id, name=name, tracks="")
+            self.session.add(new_playlist)
+            self.session.commit()
+        except Exception as e:
+            self.session.rollback()
+            print("Error in create_playlist:", e)
 
 try:
     db = DBClass()
-    print("\nSuccesfully connected to MySQL\n")
+    print("\nSuccessfully connected to MySQL\n")
 except Exception as e:
     raise Exception("\nNot able to connect to MySQL! Reason:", e, "\n")
 
