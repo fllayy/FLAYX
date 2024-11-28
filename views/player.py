@@ -72,13 +72,13 @@ class MusicControlsView(View):
             
         else:
             if interaction.user.guild_permissions.kick_members:
-                await interaction.response.send_message(embed=discord.Embed(description="The player has been resumed", color=discord.Color.green()), delete_after=10)
+                await interaction.response.send_message(embed=discord.Embed(description="The player has been paused", color=discord.Color.green()), delete_after=10)
                 player.pause_votes.clear()
                 return await player.pause(True)
             elif function.db.find_one(function.Setting, interaction.message.guild.id).dj in [role.id for role in interaction.user.roles]:
-                await interaction.response.send_message(embed=discord.Embed(description="The player has been resumed", color=discord.Color.green()), delete_after=10)
+                await interaction.response.send_message(embed=discord.Embed(description="The player has been paused", color=discord.Color.green()), delete_after=10)
                 player.resume_votes.clear()
-                return await player.pause(False)
+                return await player.pause(True)
             
             required = math.ceil((len(interaction.user.voice.channel.members)-1) / 2.5)
             player.pause_votes.add(interaction.user)
